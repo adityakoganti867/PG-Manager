@@ -1,0 +1,13 @@
+<nav class="navbar" *ngIf="!isLoginPage() && (authService.user$ | async) as user">
+    <div class="logo">PG Manager</div>
+    <div class="nav-right">
+        <span class="welcome-text">User: {{ user.mobile }}</span>
+        <button class="logout-btn" (click)="logout()">
+            Logout
+        </button>
+    </div>
+</nav>
+
+<div class="container">
+    <router-outlet></router-outlet>
+</div>

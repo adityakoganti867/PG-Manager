@@ -1,0 +1,111 @@
+<div class="dashboard">
+    <div class="header-action">
+        <h2 style="margin-bottom: 0;">Supervisor Dashboard</h2>
+    </div>
+
+    <div class="list">
+        <h3>Guest Complaints</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Guest</th>
+                    <th>Room</th>
+                    <th>Type</th>
+                    <th>Description</th>
+                    <th>
+                        <div class="th-content"
+                            style="display: flex; align-items: center; gap: 8px; position: relative;">
+                            Status
+                            <div class="filter-wrapper" (click)="toggleDropdown('complaintStatusFilter', $event)"
+                                style="cursor: pointer;">
+                                <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                    stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+                                    style="width: 14px; height: 14px;">
+                                    <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                                </svg>
+                                <div class="custom-dropdown-menu" *ngIf="openDropdown === 'complaintStatusFilter'"
+                                    style="position: absolute; top: 100%; right: 0; background: white; box-shadow: 0 4px 12px rgba(0,0,0,0.1); border-radius: 8px; padding: 8px; z-index: 100;">
+                                    <div class="dropdown-item" (click)="setFilter('complaintStatusFilter', '')"
+                                        style="padding: 4px 8px; font-size: 0.75rem; cursor: pointer;">ALL</div>
+                                    <div class="dropdown-item"
+                                        (click)="setFilter('complaintStatusFilter', 'Registered')"
+                                        style="padding: 4px 8px; font-size: 0.75rem; cursor: pointer;">REGISTERED</div>
+                                    <div class="dropdown-item"
+                                        (click)="setFilter('complaintStatusFilter', 'InProgress')"
+                                        style="padding: 4px 8px; font-size: 0.75rem; cursor: pointer;">IN PROGRESS</div>
+                                    <div class="dropdown-item" (click)="setFilter('complaintStatusFilter', 'Solved')"
+                                        style="padding: 4px 8px; font-size: 0.75rem; cursor: pointer;">SOLVED</div>
+                                </div>
+                            </div>
+                        </div>
+                    </th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr *ngFor="let c of filteredComplaints" class="fade-in-row">
+                    <td style="font-weight: 600;">{{c.guest?.name}}</td>
+                    <td>{{c.guest?.roomNumber}}</td>
+                    <td style="color: #434190; font-weight: 600;">{{c.type}}</td>
+                    <td style="max-width: 400px; white-space: normal;">{{c.description}}</td>
+                    <td>
+                        <span class="status-badge" [class]="'status-' + (c.status?.toLowerCase() || 'registered')">
+                            {{c.status}}
+                        </span>
+                    </td>
+                    <td>
+
+                        <button class="action-btn" style="padding: 6px 14px; font-size: 0.85rem;"
+                            *ngIf="c.status !== 'Solved'" (click)="openStatusUpdate(c)">Update Status</button>
+                        <span *ngIf="c.status === 'Solved'"
+                            style="color: green; font-weight: bold; font-size: 0.8rem;">Locked</span>
+
+                    </td>
+                </tr>
+                <tr *ngIf="complaints.length === 0">
+                    <td colspan="6" style="text-align: center; padding: 3rem; color: #718096;">
+                        No complaints found. All issues are resolved!
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+
+    <!-- Status Update Modal -->
+    <div class="modal-overlay" *ngIf="showStatusUpdateModal">
+        <div class="modal-content">
+            <h3>Update Complaint Status</h3>
+            <form [formGroup]="statusUpdateForm" (ngSubmit)="updateComplaintStatus()">
+                <div class="form-group">
+                    <label>Status</label>
+                    <select formControlName="status">
+                        <option value="Registered">Registered</option>
+                        <option value="InProgress">In Progress</option>
+                        <option value="Solved">Solved</option>
+                    </select>
+                </div>
+
+                <div
+                    *ngIf="statusUpdateForm.get('status')?.value === 'InProgress' || statusUpdateForm.get('status')?.value === 'Solved'">
+                    <div class="form-group" *ngIf="statusUpdateForm.get('status')?.value === 'InProgress'">
+                        <label>Estimated Resolution (Days)</label>
+                        <select formControlName="estimatedResolutionDays">
+                            <option *ngFor="let d of [1,2,3,4,5]" [value]="d">{{d}} Day{{d > 1 ? 's' : ''}}
+                            </option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label>Resolution/Progress Notes</label>
+                        <textarea formControlName="notes" placeholder="Enter notes here..."
+                            style="width: 100%; min-height: 120px; padding: 12px; border-radius: 12px; border: 2px solid #edf2f7;"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="submit" class="action-btn">Save Update</button>
+                    <button type="button" class="close-btn" (click)="closeStatusUpdate()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>

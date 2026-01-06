@@ -1,0 +1,41 @@
+<div class="login-container">
+  <div class="login-box">
+    <h2>PG Management System</h2>
+    <h3>Login</h3>
+    <form [formGroup]="loginForm" (ngSubmit)="onSubmit()">
+      <div class="form-group">
+        <label>Mobile Number</label>
+        <input type="text" formControlName="mobile" placeholder="Enter Mobile" (blur)="onMobileBlur()" />
+      </div>
+      <div class="form-group">
+        <label>Password</label>
+        <input type="password" formControlName="password" placeholder="Enter Password" />
+      </div>
+      <button type="submit" [disabled]="loginForm.invalid">Login</button>
+      <div class="error" *ngIf="errorMsg">{{ errorMsg }}</div>
+    </form>
+  </div>
+</div>
+
+<!-- Set Password Modal -->
+<div class="modal-overlay" *ngIf="showSetPasswordModal">
+  <div class="modal-content">
+    <h3>Set Your Password</h3>
+    <p>Welcome! Please set a secure password for your account.</p>
+
+    <div class="form-group">
+      <label>New Password</label>
+      <input type="password" [(ngModel)]="newPassword" placeholder="New Password" />
+    </div>
+    <div class="form-group">
+      <label>Confirm Password</label>
+      <input type="password" [(ngModel)]="confirmPassword" placeholder="Confirm Password" />
+    </div>
+
+    <div class="error" *ngIf="passwordError" style="margin-bottom: 1rem;">{{ passwordError }}</div>
+
+    <div class="modal-actions">
+      <button (click)="onSetPasswordSubmit()">Set Password</button>
+    </div>
+  </div>
+</div>
