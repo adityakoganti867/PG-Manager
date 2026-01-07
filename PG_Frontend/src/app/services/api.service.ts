@@ -60,5 +60,9 @@ export class ApiService {
     revertNotice(guestId: number) {
         return this.http.post(`${this.baseUrl}/admin/revert-notice/${guestId}`, {}, { responseType: 'text' });
     }
+
+    resetPassword(userId: number) {
+        return this.http.post(`${this.baseUrl}/admin/reset-password/${userId}`, {}, { responseType: 'text' });
+    }
 }
 

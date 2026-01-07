@@ -67,7 +67,10 @@
 }
 
 .sidebar button {
-    display: block;
+    display: flex;
+    justify-content: space-between;
+    /* Ensures badge goes to the right */
+    align-items: center;
     width: 100%;
     padding: 14px 20px;
     margin-bottom: 0.8rem;
@@ -76,6 +79,7 @@
     text-align: left;
     border: none;
     border-radius: 12px;
+    /* Restoring original curves */
     transition: all 0.3s ease;
     font-weight: 500;
 }
@@ -171,8 +175,41 @@ table {
     width: 100%;
     border-collapse: separate;
     border-spacing: 0 10px;
-    /* Row spacing */
+    /* Keep row spacing */
     margin-top: 0;
+}
+
+/* Scrollable Body Pattern */
+tbody {
+    display: block;
+    max-height: calc(100vh - 480px);
+    /* Raised bottom for better spacing */
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Hide horizontal scroll */
+    width: 100%;
+}
+
+thead,
+tbody tr {
+    display: table;
+    width: 100%;
+    table-layout: fixed;
+    /* Ensures column alignment */
+}
+
+/* Custom scrollbar for tbody */
+tbody::-webkit-scrollbar {
+    width: 6px;
+}
+
+tbody::-webkit-scrollbar-track {
+    background: #f1f1f1;
+}
+
+tbody::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
 }
 
 th {
@@ -207,15 +244,31 @@ tbody tr {
 tbody tr:hover {
     background: white;
     transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-}
-
-tbody tr:hover {
-    transform: scale(1.01);
+    /* Scale removed */
     box-shadow: 0 5px 15px rgba(0, 0, 0, 0.05);
     z-index: 5;
     position: relative;
+    cursor: pointer;
 }
+
+/* Row Animation */
+.fade-in-row {
+    animation: fadeInRow 0.5s ease-out forwards;
+    opacity: 0;
+}
+
+@keyframes fadeInRow {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
 
 td {
     padding: 1.2rem 1rem;
@@ -739,6 +792,34 @@ td button:hover {
     box-shadow: 0 4px 10px rgba(102, 126, 234, 0.3);
 }
 
+.sidebar-badge {
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5253 100%);
+    color: white;
+    font-size: 0.75rem;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-left: auto;
+    font-weight: 800;
+    box-shadow: 0 4px 10px rgba(238, 82, 83, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    animation: pulse-sidebar-badge 2s infinite ease-in-out;
+    text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1);
+}
+
+
+
+@keyframes pulse-sidebar-badge {
+    0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 0 rgba(238, 82, 83, 0.7);
+    }
+
+    70% {
+        transform: scale(1.05);
+        box-shadow: 0 0 0 6px rgba(238, 82, 83, 0);
+    }
+}
+
 /* Status Badges with Neon Pulse */
 .status-badge {
     padding: 6px 14px;
@@ -1059,20 +1140,38 @@ td button:hover {
 
 /* Stylish Modal & Form */
 .stylish-modal {
-    width: 650px;
+    width: 800px;
     max-width: 95vw;
     transition: background 0.5s ease;
-    overflow: hidden;
+    overflow-y: auto;
+    /* Enable vertical scrolling */
+    max-height: 90vh;
+    /* Limit height */
     position: relative;
     border: 1px solid rgba(255, 255, 255, 0.6);
     padding: 1.5rem;
+
+    /* Hide Scrollbar */
+    scrollbar-width: none;
+    /* Firefox */
+    -ms-overflow-style: none;
+    /* IE 10+ */
+}
+
+/* Hide Scrollbar Chrome/Safari/Webkit */
+.stylish-modal::-webkit-scrollbar {
+    display: none;
+    width: 0px;
+    background: transparent;
 }
 
 
 .modal-title {
     text-align: center;
-    font-size: 1.8rem;
-    margin-bottom: 2rem;
+    font-size: 1.6rem;
+    /* Slightly smaller */
+    margin-bottom: 1.5rem;
+    /* Reduced margin */
     color: #2d3748;
     font-weight: 700;
 }
@@ -1080,7 +1179,8 @@ td button:hover {
 .stylish-form {
     display: flex;
     flex-direction: column;
-    gap: 1rem;
+    gap: 0.8rem;
+    /* Reduced gap */
     width: 100%;
     /* Ensure full width */
 }
@@ -1099,6 +1199,13 @@ td button:hover {
     gap: 1rem;
 }
 
+.form-row.four-col {
+    display: grid;
+    grid-template-columns: 0.8fr 0.8fr 0.8fr 1.6fr;
+    /* Share, Type, Floor, Room(2x) */
+    gap: 0.8rem;
+}
+
 .form-group {
     display: flex;
     flex-direction: column;
@@ -1110,10 +1217,12 @@ td button:hover {
 }
 
 .form-group label {
-    font-size: 0.85rem;
+    font-size: 0.8rem;
+    /* Slightly smaller text */
     color: #4a5568;
-    margin-bottom: 8px;
-    font-weight: 600;
+    margin-bottom: 6px;
+    /* Reduced margin */
+    font-weight: 700;
     /* Slightly bolder */
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -1132,8 +1241,10 @@ td button:hover {
     transition: all 0.3s ease;
     background: white;
     box-sizing: border-box;
-    height: 48px;
-    /* Fixed height for consistency */
+
+    height: 40px;
+    padding: 8px 12px;
+    /* Slightly reduced padding */
 }
 
 .stylish-form .form-group input:focus,
@@ -1147,15 +1258,19 @@ td button:hover {
 .toggle-switch {
     display: flex;
     background: #e2e8f0;
-    border-radius: 14px;
-    padding: 5px;
-    gap: 5px;
+    border-radius: 12px;
+    padding: 3px;
+    /* Reduced padding */
+    gap: 3px;
+    margin-bottom: 0.5rem;
+    /* Add clear bottom margin */
 }
 
 .toggle-switch label {
     flex: 1;
     text-align: center;
-    padding: 12px;
+    padding: 8px;
+    /* Reduced padding */
     border-radius: 10px;
     cursor: pointer;
     margin-bottom: 0;
@@ -1166,6 +1281,8 @@ td button:hover {
     align-items: center;
     justify-content: center;
     border: 1px solid transparent;
+    font-size: 0.85rem;
+    /* Smaller text */
 }
 
 .toggle-switch input {
@@ -1211,20 +1328,23 @@ td button:hover {
 
 /* Section Title - Stronger Selector */
 .stylish-form .form-section-title {
-    font-size: 0.85rem;
+    font-size: 0.75rem;
+    /* Smaller text */
     font-weight: 700;
     text-transform: uppercase;
     letter-spacing: 1.5px;
     color: #a0aec0;
-    border-bottom: 2px solid #edf2f7;
-    padding-bottom: 8px;
-    margin-bottom: 1.2rem;
-    margin-top: 0.5rem;
+    border-bottom: 1px solid #edf2f7;
+    /* Thinner border */
+    padding-bottom: 4px;
+    /* Reduced padding */
+    margin-bottom: 0.6rem;
+    /* Reduced margin */
+    margin-top: 0.2rem;
+    /* Reduced margin */
     text-align: left !important;
     display: block;
     width: 100%;
-    margin-left: 0 !important;
-    margin-right: auto !important;
 }
 
 /* Form Section Wrapper */
@@ -1241,15 +1361,16 @@ td button:hover {
     align-items: center;
     background: #c6f6d5;
     border-radius: 12px;
-    padding: 0 20px;
+    padding: 0 16px;
     color: #2f855a;
-    height: 48px;
+    height: 40px;
+    /* Match input height */
     flex: 1;
-    /* Make it same size as form-group */
-    min-width: 150px;
-    margin-top: 28px;
-    /* Align with input baseline */
+    min-width: 120px;
+    margin-top: 23px;
+    /* Align with input */
 }
+
 
 .total-display span {
     font-size: 0.7rem;
@@ -1285,4 +1406,263 @@ td button:hover {
 .detail-row strong {
     color: #2d3748;
     margin-right: 8px;
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(238, 82, 83, 0);
+}
+
+
+.modal-actions .close-btn {
+    flex: 1;
+    background: white;
+    color: #4a5568;
+    border: 1px solid #cbd5e0;
+    margin-top: 0;
+    font-weight: 600;
+}
+
+.modal-actions .close-btn:hover {
+    background: #f7fafc;
+    color: #2d3748;
+    transform: translateY(-2px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+
+}
+
+/* Ensure Modal Actions are Side-by-Side */
+/* Ensure Modal Actions are Side-by-Side */
+.modal-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1rem;
+    /* Reduced from 2rem */
+    width: 100%;
+}
+
+
+.modal-actions button {
+    flex: 1;
+    width: auto !important;
+    margin-top: 0 !important;
+    display: inline-flex;
+    justify-content: center;
+    align-items: center;
+    height: 40px !important;
+    /* Reduced height */
+    line-height: 40px !important;
+}
+
+/* Notice Badge Indicator */
+.notice-badge {
+    display: inline-block;
+    width: 8px;
+    height: 8px;
+    background-color: #e53e3e;
+    border-radius: 50%;
+    margin-left: 10px;
+    box-shadow: 0 0 0 2px rgba(255, 255, 255, 0.8), 0 0 8px #e53e3e;
+    vertical-align: middle;
+    animation: notice-pulse 1.5s infinite;
+}
+
+/* Error Text */
+.error-text {
+    color: #e53e3e;
+    font-size: 0.8rem;
+    margin-top: -8px;
+    margin-bottom: 8px;
+    display: block;
+    font-weight: 600;
+}
+
+/* Input Error Styles */
+.input-wrapper {
+    position: relative;
+    width: 100%;
+}
+
+.input-error {
+    border-color: #e53e3e !important;
+    padding-right: 40px !important;
+    /* Space for icon */
+    background: #fff5f5 !important;
+}
+
+.error-icon {
+    position: absolute;
+    right: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 20px;
+    height: 20px;
+    color: #e53e3e;
+    pointer-events: none;
+}
+
+@keyframes notice-pulse {
+    0% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(229, 62, 62, 0.7);
+    }
+
+    70% {
+        transform: scale(1.1);
+        box-shadow: 0 0 0 6px rgba(229, 62, 62, 0);
+    }
+
+
+    100% {
+        transform: scale(0.95);
+        box-shadow: 0 0 0 0 rgba(229, 62, 62, 0);
+    }
+}
+
+
+/* Notification Bell Styles */
+.notification-wrapper {
+    position: relative;
+    cursor: pointer;
+}
+
+.bell-icon-container {
+    position: relative;
+    padding: 10px;
+    background: white;
+    border-radius: 50%;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+    transition: all 0.3s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 45px;
+    height: 45px;
+}
+
+.bell-icon-container:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(0, 0, 0, 0.1);
+    background: #f7fafc;
+}
+
+.bell-icon {
+    width: 24px;
+    height: 24px;
+    color: #4a5568;
+}
+
+.notification-dot {
+    position: absolute;
+    top: 5px;
+    right: 5px;
+    width: 10px;
+    height: 10px;
+    background: #e53e3e;
+    border-radius: 50%;
+    border: 2px solid white;
+    box-shadow: 0 0 0 2px rgba(229, 62, 62, 0.4);
+    animation: notice-pulse 2s infinite;
+}
+
+/* Notification Dropdown */
+.notification-dropdown {
+    right: -10px;
+    left: auto;
+    /* Override default left: 0 */
+    width: 320px;
+    padding: 0;
+    overflow: hidden;
+    transform-origin: top right;
+}
+
+.dropdown-header {
+    padding: 15px;
+    background: #f7fafc;
+    border-bottom: 1px solid #edf2f7;
+    font-weight: 800;
+    color: #2d3748;
+    font-size: 0.85rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.dropdown-item.notice-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 15px;
+    border-bottom: 1px solid #f7fafc;
+    background: white;
+    color: #4a5568;
+    width: 100%;
+}
+
+.dropdown-item.notice-item:hover {
+    background: #f0fff4 !important;
+    transform: none;
+}
+
+.room-pill {
+    background: #ebf8ff;
+    color: #2b6cb0;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 700;
+}
+
+.guest-name {
+    font-weight: 700;
+    color: #2d3748;
+    font-size: 0.95rem;
+}
+
+.action-text {
+    font-size: 0.75rem;
+    color: #718096;
+    text-transform: uppercase;
+    font-weight: 700;
+    margin-left: auto;
+    letter-spacing: 0.5px;
+}
+
+.dropdown-item.empty-state {
+    padding: 2rem;
+    text-align: center;
+    color: #a0aec0;
+    font-weight: 500;
+    background: white;
+    cursor: default;
+    border: none;
+    box-shadow: none;
+}
+
+.dropdown-item.empty-state:hover {
+    transform: none;
+    background: white;
+    box-shadow: none;
+}
+
+/* Internal Table Scrolling Wrapper - Just a container now */
+.table-scroll-wrapper {
+    position: relative;
+    /* Height and overflow handled by tbody now */
+}
+
+/* Custom scrollbar for table */
+.table-scroll-wrapper::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
 }

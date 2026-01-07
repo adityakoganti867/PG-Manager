@@ -71,6 +71,8 @@ export class GuestDashboardComponent implements OnInit {
     }
 
 
+
+
     loadProfile() {
         this.api.getProfile(this.user.id).subscribe({
             next: (data) => {
@@ -132,6 +134,8 @@ export class GuestDashboardComponent implements OnInit {
 
 
     showNoticeConfirmationModal: boolean = false;
+    showWarningModal: boolean = false;
+    warningMessage: string = '';
 
     initiateNotice() {
         this.showNoticeConfirmationModal = true;
@@ -139,6 +143,11 @@ export class GuestDashboardComponent implements OnInit {
 
     closeNoticeConfirmation() {
         this.showNoticeConfirmationModal = false;
+    }
+
+    closeWarningModal() {
+        this.showWarningModal = false;
+        this.warningMessage = '';
     }
 
     confirmNoticeInitiation() {
@@ -150,8 +159,9 @@ export class GuestDashboardComponent implements OnInit {
             },
             error: (err) => {
                 const msg = err.error || "Failed to initiate notice";
-                alert(msg);
-                this.closeNoticeConfirmation();
+                this.warningMessage = msg;
+                this.closeNoticeConfirmation(); // Close the confirm modal
+                this.showWarningModal = true;   // Open the warning modal
             }
         });
     }

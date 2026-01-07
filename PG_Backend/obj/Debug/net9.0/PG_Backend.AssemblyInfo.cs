@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("PG_Backend")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d470d81d2d6689279f3267fcd84a61343981d0f4")]
 [assembly: System.Reflection.AssemblyProductAttribute("PG_Backend")]
 [assembly: System.Reflection.AssemblyTitleAttribute("PG_Backend")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

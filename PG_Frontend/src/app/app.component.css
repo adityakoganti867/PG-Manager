@@ -2,63 +2,104 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    padding: 1rem 3rem;
-    background: rgba(255, 255, 255, 0.95);
-    color: #2d3748;
+    padding: 0.8rem 1.5rem;
+    /* Aligned with sidebar content start */
+    background: rgba(255, 255, 255, 0.85);
+    /* More transparency */
+    backdrop-filter: blur(20px) saturate(180%);
+    /* Stronger frosted glass */
+    -webkit-backdrop-filter: blur(20px) saturate(180%);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.3);
     box-shadow: 0 4px 30px rgba(0, 0, 0, 0.03);
-    border-bottom: 1px solid rgba(0, 0, 0, 0.05);
-    backdrop-filter: blur(10px);
     position: sticky;
     top: 0;
     z-index: 1000;
+    transition: all 0.3s ease;
 }
 
 .logo {
-    font-size: 1.5rem;
+    font-size: 1.8rem;
     font-weight: 800;
-    letter-spacing: -0.5px;
+    /* Extra bold */
+    letter-spacing: -1px;
+    /* Tighter letter spacing */
     background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
     cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-family: 'Outfit', sans-serif;
+    /* Ensure Outfit is used */
+}
+
+.logo-icon {
+    width: 32px;
+    height: 32px;
+    filter: drop-shadow(0 4px 6px rgba(102, 126, 234, 0.4));
+    /* Glow effect */
 }
 
 .nav-right {
     display: flex;
     align-items: center;
-    gap: 2rem;
+    gap: 2.5rem;
 }
 
 .welcome-text {
-    font-size: 0.95rem;
-    color: #718096;
-    font-weight: 500;
+    font-size: 0.9rem;
+    color: #4a5568;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    background: rgba(102, 126, 234, 0.1);
+    padding: 8px 16px;
+    border-radius: 30px;
+    border: 1px solid rgba(102, 126, 234, 0.2);
 }
 
 .logout-btn {
-    background: white;
-    border: 2px solid #edf2f7;
-    color: #4a5568;
-    padding: 0.6rem 1.5rem;
-    border-radius: 50px;
+    background: linear-gradient(135deg, #ff6b6b 0%, #ee5253 100%);
+    /* Subtle red gradient */
+    color: white;
+    border: none;
+    padding: 10px 24px;
+    border-radius: 12px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    font-weight: 600;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    font-weight: 700;
     font-size: 0.9rem;
+    letter-spacing: 0.5px;
+    box-shadow: 0 4px 15px rgba(238, 82, 83, 0.3);
+    display: flex;
+    align-items: center;
+    gap: 8px;
 }
 
 .logout-btn:hover {
-    border-color: #f56565;
-    color: #f56565;
-    background: #fff5f5;
-    transform: translateY(-2px);
-    box-shadow: 0 4px 12px rgba(245, 101, 101, 0.15);
+    transform: translateY(-2px) scale(1.02);
+    box-shadow: 0 6px 20px rgba(238, 82, 83, 0.4);
+    background: linear-gradient(135deg, #ff7675 0%, #d63031 100%);
+}
+
+/* Main layout container */
+:host {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    /* Strictly constrain height to viewport */
+    overflow: hidden;
+    /* Prevent body scroll */
 }
 
 .container {
+    flex: 1;
+    /* This will automatically take up all remaining space */
+    display: flex;
+    flex-direction: column;
     padding: 0;
-    /* Remove padding here to let dashboard full-width handle it, or manage in specific comps */
     width: 100%;
-    margin: 0 auto;
+    margin: 0;
 }

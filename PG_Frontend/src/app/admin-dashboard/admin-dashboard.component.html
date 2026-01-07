@@ -3,7 +3,10 @@
         <h3>Admin</h3>
         <button (click)="switchTab('supervisors')" [class.active]="activeTab==='supervisors'">Supervisors</button>
         <button (click)="switchTab('rooms')" [class.active]="activeTab==='rooms'">Rooms</button>
-        <button (click)="switchTab('guests')" [class.active]="activeTab==='guests'">Guests</button>
+        <button (click)="switchTab('guests')" [class.active]="activeTab==='guests'">
+            Guests
+            <span *ngIf="pendingNoticeCount > 0" class="sidebar-badge">{{pendingNoticeCount}}</span>
+        </button>
         <button (click)="switchTab('complaints')" [class.active]="activeTab==='complaints'">Complaints</button>
         <button (click)="switchTab('transactions')" [class.active]="activeTab==='transactions'">Transactions</button>
     </nav>
@@ -17,26 +20,73 @@
             </div>
             <div class="list">
                 <h3>All Supervisors</h3>
-                <table>
-                    <tr>
-                        <th>Name</th>
-                        <th>Mobile</th>
-                        <th>Status</th>
-                        <th>Action</th>
-                    </tr>
-                    <tr *ngFor="let s of supervisors">
-                        <td>{{s.name}}</td>
-                        <td>{{s.user.mobile}}</td>
-                        <td>
-                            <span [ngClass]="s.user.isActive ? 'status-active' : 'status-disabled'">
-                                {{ s.user.isActive ? 'Active' : 'Disabled' }}
-                            </span>
-                        </td>
-                        <td><button (click)="toggleSupervisor(s.user.id)">{{ s.user.isActive ? 'Disable' : 'Enable'
-                                }}</button></td>
-                    </tr>
-                </table>
+                <div class="table-scroll-wrapper">
+                    <table>
+                        <tr>
+                            <th>Name</th>
+                            <th>Mobile</th>
+                            <th>Status</th>
+                            <th>Action</th>
+                        </tr>
+                        <tr *ngFor="let s of supervisors">
+                            <td>{{s.name}}</td>
+                            <td>{{s.user.mobile}}</td>
+                            <td>
+                                <span [ngClass]="s.user.isActive ? 'status-active' : 'status-disabled'">
+                                    {{ s.user.isActive ? 'Active' : 'Disabled' }}
+                                </span>
+                            </td>
+                            <td>
+                                <div style="display: flex; gap: 8px;">
+                                    <button (click)="toggleSupervisor(s.user.id)">
+                                        {{ s.user.isActive ? 'Disable' : 'Enable' }}
+                                    </button>
+                                    <button (click)="resetPassword(s.user.id)" class="reset-btn" title="Reset Password">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            style="width: 14px; height: 14px;">
+                                            <path d="M2.5 2v6h6M21.5 22v-6h-6"></path>
+                                            <path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
+
+            <!-- Add Supervisor Modal -->
+            <!-- Add Supervisor Modal -->
+
+
+            <!-- New Warning Modal for Password Reset -->
+            <div class="modal-overlay" *ngIf="showResetPasswordModal">
+                <div class="modal-content stylish-modal">
+                    <h3 class="modal-title" style="color: #e53e3e; display: flex; align-items: center; gap: 10px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" style="width: 24px; height: 24px;">
+                            <path
+                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
+                            </path>
+                            <line x1="12" y1="9" x2="12" y2="13"></line>
+                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                        </svg>
+                        Confirm Reset
+                    </h3>
+                    <p style="color: #4a5568; margin-bottom: 1.5rem; line-height: 1.6;">
+                        Are you sure you want to reset this user's password? They will be prompted to set a new password
+                        on their next login.
+                    </p>
+                    <div class="modal-actions">
+                        <button class="action-btn"
+                            style="background: linear-gradient(135deg, #e53e3e 0%, #c53030 100%);"
+                            (click)="confirmResetPassword()">Reset Password</button>
+                        <button class="close-btn" (click)="closeResetPasswordModal()">Cancel</button>
+                    </div>
+                </div>
+            </div>
+
 
             <!-- Add Supervisor Modal -->
             <div class="modal-overlay" *ngIf="showAddSupervisorModal">
@@ -44,7 +94,20 @@
                     <h3>Add Supervisor</h3>
                     <form [formGroup]="supervisorForm" (ngSubmit)="addSupervisor()">
                         <input formControlName="name" placeholder="Name">
-                        <input formControlName="mobile" placeholder="Mobile">
+                        <div class="input-wrapper">
+                            <input formControlName="mobile" placeholder="Mobile"
+                                [class.input-error]="supervisorForm.get('mobile')?.hasError('duplicate')">
+                            <svg *ngIf="supervisorForm.get('mobile')?.hasError('duplicate')" class="error-icon"
+                                viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="8" x2="12" y2="12"></line>
+                                <line x1="12" y1="16" x2="12.01" y2="16"></line>
+                            </svg>
+                        </div>
+                        <span class="error-text" *ngIf="supervisorForm.get('mobile')?.hasError('duplicate')">
+                            Mobile number already exists
+                        </span>
                         <input type="date" formControlName="joiningDate">
                         <div class="modal-actions">
                             <button type="submit" class="action-btn">Add Supervisor</button>
@@ -64,87 +127,105 @@
 
             <div class="list">
                 <h3>All Rooms</h3>
-                <table>
-                    <tr>
-                        <th>
-                            <div class="th-content">Room No</div>
-                        </th>
-                        <th>
-                            <div class="th-content">
-                                Floor
-                                <div class="filter-wrapper" (click)="toggleDropdown('roomFloorFilter', $event)">
-                                    <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                                    </svg>
-                                    <div class="custom-dropdown-menu" *ngIf="openDropdown === 'roomFloorFilter'">
-                                        <div class="dropdown-item" (click)="setFilter('roomFloorFilter', '')"
-                                            [class.active]="!roomFloorFilter">ALL</div>
-                                        <div class="dropdown-item" *ngFor="let f of [1,2,3,4,5,6,7,8]"
-                                            (click)="setFilter('roomFloorFilter', f)"
-                                            [class.active]="roomFloorFilter == f">
-                                            {{f}}</div>
+                <div class="table-scroll-wrapper">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>
+                                    <div class="th-content">Room No</div>
+                                </th>
+                                <th>
+                                    <div class="th-content">
+                                        Floor
+                                        <div class="filter-wrapper" (click)="toggleDropdown('roomFloorFilter', $event)">
+                                            <svg class="filter-icon" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3">
+                                                </polygon>
+                                            </svg>
+                                            <div class="custom-dropdown-menu"
+                                                *ngIf="openDropdown === 'roomFloorFilter'">
+                                                <div class="dropdown-item" (click)="setFilter('roomFloorFilter', '')"
+                                                    [class.active]="!roomFloorFilter">ALL</div>
+                                                <div class="dropdown-item" *ngFor="let f of [1,2,3,4,5,6,7,8]"
+                                                    (click)="setFilter('roomFloorFilter', f)"
+                                                    [class.active]="roomFloorFilter == f">
+                                                    {{f}}</div>
+                                            </div>
+                                        </div>
+                                        <span class="active-filter-label"
+                                            *ngIf="roomFloorFilter">{{roomFloorFilter}}</span>
                                     </div>
-                                </div>
-                                <span class="active-filter-label" *ngIf="roomFloorFilter">{{roomFloorFilter}}</span>
-                            </div>
-                        </th>
-                        <th>
-                            <div class="th-content">
-                                Share
-                                <div class="filter-wrapper" (click)="toggleDropdown('roomShareFilter', $event)">
-                                    <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                                    </svg>
-                                    <div class="custom-dropdown-menu" *ngIf="openDropdown === 'roomShareFilter'">
-                                        <div class="dropdown-item" (click)="setFilter('roomShareFilter', '')"
-                                            [class.active]="!roomShareFilter">ALL</div>
-                                        <div class="dropdown-item" *ngFor="let s of [1,2,3,4,5,6]"
-                                            (click)="setFilter('roomShareFilter', s)"
-                                            [class.active]="roomShareFilter == s">
-                                            {{s}}</div>
+                                </th>
+                                <th>
+                                    <div class="th-content">
+                                        Share
+                                        <div class="filter-wrapper" (click)="toggleDropdown('roomShareFilter', $event)">
+                                            <svg class="filter-icon" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3">
+                                                </polygon>
+                                            </svg>
+                                            <div class="custom-dropdown-menu"
+                                                *ngIf="openDropdown === 'roomShareFilter'">
+                                                <div class="dropdown-item" (click)="setFilter('roomShareFilter', '')"
+                                                    [class.active]="!roomShareFilter">ALL</div>
+                                                <div class="dropdown-item" *ngFor="let s of [1,2,3,4,5,6]"
+                                                    (click)="setFilter('roomShareFilter', s)"
+                                                    [class.active]="roomShareFilter == s">
+                                                    {{s}}</div>
+                                            </div>
+                                        </div>
+                                        <span class="active-filter-label"
+                                            *ngIf="roomShareFilter">{{roomShareFilter}}</span>
                                     </div>
-                                </div>
-                                <span class="active-filter-label" *ngIf="roomShareFilter">{{roomShareFilter}}</span>
-                            </div>
-                        </th>
-                        <th>
-                            <div class="th-content">
-                                Type
-                                <div class="filter-wrapper" (click)="toggleDropdown('roomTypeFilter', $event)">
-                                    <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                                    </svg>
-                                    <div class="custom-dropdown-menu" *ngIf="openDropdown === 'roomTypeFilter'">
-                                        <div class="dropdown-item" (click)="setFilter('roomTypeFilter', '')"
-                                            [class.active]="!roomTypeFilter">ALL</div>
-                                        <div class="dropdown-item" (click)="setFilter('roomTypeFilter', 'AC')"
-                                            [class.active]="roomTypeFilter === 'AC'">AC</div>
-                                        <div class="dropdown-item" (click)="setFilter('roomTypeFilter', 'Non-AC')"
-                                            [class.active]="roomTypeFilter === 'Non-AC'">NON-AC</div>
+                                </th>
+                                <th>
+                                    <div class="th-content">
+                                        Type
+                                        <div class="filter-wrapper" (click)="toggleDropdown('roomTypeFilter', $event)">
+                                            <svg class="filter-icon" viewBox="0 0 24 24" fill="none"
+                                                stroke="currentColor" stroke-width="2" stroke-linecap="round"
+                                                stroke-linejoin="round">
+                                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3">
+                                                </polygon>
+                                            </svg>
+                                            <div class="custom-dropdown-menu" *ngIf="openDropdown === 'roomTypeFilter'">
+                                                <div class="dropdown-item" (click)="setFilter('roomTypeFilter', '')"
+                                                    [class.active]="!roomTypeFilter">ALL</div>
+                                                <div class="dropdown-item" (click)="setFilter('roomTypeFilter', 'AC')"
+                                                    [class.active]="roomTypeFilter === 'AC'">AC</div>
+                                                <div class="dropdown-item"
+                                                    (click)="setFilter('roomTypeFilter', 'Non-AC')"
+                                                    [class.active]="roomTypeFilter === 'Non-AC'">NON-AC</div>
+                                            </div>
+                                        </div>
+                                        <span class="active-filter-label"
+                                            *ngIf="roomTypeFilter">{{roomTypeFilter}}</span>
                                     </div>
-                                </div>
-                                <span class="active-filter-label" *ngIf="roomTypeFilter">{{roomTypeFilter}}</span>
-                            </div>
-                        </th>
-                        <th>
-                            <div class="th-content">Availability</div>
-                        </th>
-                    </tr>
-                    <tr *ngFor="let r of filteredRooms">
-                        <td>{{r.roomNumber}}</td>
-                        <td>{{r.floorNumber}}</td>
-                        <td>{{r.sharingType}} Sharing</td>
-                        <td>{{r.roomType}}</td>
-                        <td>
-                            <span [ngClass]="r.availableBeds > 0 ? 'status-active-blink' : 'status-disabled'">
-                                {{r.availableBeds}} Available
-                            </span>
-                        </td>
-                    </tr>
-                </table>
+                                </th>
+                                <th>
+                                    <div class="th-content">Availability</div>
+                                </th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr *ngFor="let r of filteredRooms">
+                                <td>{{r.roomNumber}}</td>
+                                <td>{{r.floorNumber}}</td>
+                                <td>{{r.sharingType}} Sharing</td>
+                                <td>{{r.roomType}}</td>
+                                <td>
+                                    <span [ngClass]="r.availableBeds > 0 ? 'status-active-blink' : 'status-disabled'">
+                                        {{r.availableBeds}} Available
+                                    </span>
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
             </div>
 
             <!-- Add Room Modal -->
@@ -183,116 +264,166 @@
             <div class="header-action"
                 style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 2rem;">
                 <h2 style="margin-bottom: 0;">Manage Guests</h2>
-                <button class="action-btn" (click)="openAddGuest()">+ Register Guest</button>
+                <div style="display: flex; align-items: center; gap: 1.5rem;">
+                    <!-- Notification Bell -->
+                    <div class="notification-wrapper" (click)="toggleDropdown('noticeNotification', $event)"
+                        title="Pending Notices">
+                        <div class="bell-icon-container">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                stroke-linecap="round" stroke-linejoin="round" class="bell-icon">
+                                <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+                                <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+                            </svg>
+                            <span *ngIf="pendingNoticeCount > 0" class="notification-dot"></span>
+                        </div>
+
+                        <!-- Dropdown -->
+                        <div class="custom-dropdown-menu notification-dropdown"
+                            *ngIf="openDropdown === 'noticeNotification'" (click)="$event.stopPropagation()">
+                            <div class="dropdown-header">Pending Notices ({{pendingNoticeCount}})</div>
+                            <div *ngIf="pendingNoticeCount === 0" class="dropdown-item empty-state">
+                                No pending notices
+                            </div>
+                            <div class="dropdown-item notice-item" *ngFor="let g of pendingNoticeGuests"
+                                (click)="viewGuest(g)">
+                                <div style="display: flex; align-items: center; gap: 10px; width: 100%;">
+                                    <span class="room-pill">{{g.roomNumber}}</span>
+                                    <span class="guest-name">{{g.name}}</span>
+                                </div>
+                                <span class="action-text">View</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button class="action-btn" (click)="openAddGuest()">+ Register Guest</button>
+                </div>
             </div>
 
             <div class="list">
                 <h3>All Guests</h3>
-                <table>
-                    <tr>
-                        <th>
-                            <div class="th-content">Name</div>
-                        </th>
-                        <th>
-                            <div class="th-content">
-                                Type
-                                <div class="filter-wrapper" (click)="toggleDropdown('guestTypeFilter', $event)">
-                                    <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                                    </svg>
-                                    <div class="custom-dropdown-menu" *ngIf="openDropdown === 'guestTypeFilter'">
-                                        <div class="dropdown-item" (click)="setFilter('guestTypeFilter', '')"
-                                            [class.active]="!guestTypeFilter">ALL</div>
-                                        <div class="dropdown-item" (click)="setFilter('guestTypeFilter', 'Regular')"
-                                            [class.active]="guestTypeFilter === 'Regular'">REGULAR</div>
-                                        <div class="dropdown-item" (click)="setFilter('guestTypeFilter', 'Daily')"
-                                            [class.active]="guestTypeFilter === 'Daily'">DAILY</div>
+                <div class="table-scroll-wrapper">
+                    <table>
+                        <tr>
+                            <th>
+                                <div class="th-content">Name</div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    Type
+                                    <div class="filter-wrapper" (click)="toggleDropdown('guestTypeFilter', $event)">
+                                        <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3">
+                                            </polygon>
+                                        </svg>
+                                        <div class="custom-dropdown-menu" *ngIf="openDropdown === 'guestTypeFilter'">
+                                            <div class="dropdown-item" (click)="setFilter('guestTypeFilter', '')"
+                                                [class.active]="!guestTypeFilter">ALL</div>
+                                            <div class="dropdown-item" (click)="setFilter('guestTypeFilter', 'Regular')"
+                                                [class.active]="guestTypeFilter === 'Regular'">REGULAR</div>
+                                            <div class="dropdown-item" (click)="setFilter('guestTypeFilter', 'Daily')"
+                                                [class.active]="guestTypeFilter === 'Daily'">DAILY</div>
+                                        </div>
                                     </div>
+                                    <span class="active-filter-label" *ngIf="guestTypeFilter">{{guestTypeFilter}}</span>
                                 </div>
-                                <span class="active-filter-label" *ngIf="guestTypeFilter">{{guestTypeFilter}}</span>
-                            </div>
-                        </th>
-                        <th>
-                            <div class="th-content">Room</div>
-                        </th>
-                        <th>
-                            <div class="th-content">
-                                Rent Status
-                                <div class="filter-wrapper" (click)="toggleDropdown('rentStatusFilter', $event)">
-                                    <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                                    </svg>
-                                    <div class="custom-dropdown-menu" *ngIf="openDropdown === 'rentStatusFilter'">
-                                        <div class="dropdown-item" (click)="setFilter('rentStatusFilter', '')"
-                                            [class.active]="!rentStatusFilter">ALL</div>
-                                        <div class="dropdown-item" (click)="setFilter('rentStatusFilter', 'Safe')"
-                                            [class.active]="rentStatusFilter === 'Safe'">PAID</div>
-                                        <div class="dropdown-item" (click)="setFilter('rentStatusFilter', 'NearDue')"
-                                            [class.active]="rentStatusFilter === 'NearDue'">NEAR DUE</div>
-                                        <div class="dropdown-item" (click)="setFilter('rentStatusFilter', 'DueToday')"
-                                            [class.active]="rentStatusFilter === 'DueToday'">DUE TODAY</div>
-                                        <div class="dropdown-item" (click)="setFilter('rentStatusFilter', 'Overdue')"
-                                            [class.active]="rentStatusFilter === 'Overdue'">OVERDUE</div>
+                            </th>
+                            <th>
+                                <div class="th-content">Room</div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    Rent Status
+                                    <div class="filter-wrapper" (click)="toggleDropdown('rentStatusFilter', $event)">
+                                        <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3">
+                                            </polygon>
+                                        </svg>
+                                        <div class="custom-dropdown-menu" *ngIf="openDropdown === 'rentStatusFilter'">
+                                            <div class="dropdown-item" (click)="setFilter('rentStatusFilter', '')"
+                                                [class.active]="!rentStatusFilter">ALL</div>
+                                            <div class="dropdown-item" (click)="setFilter('rentStatusFilter', 'Safe')"
+                                                [class.active]="rentStatusFilter === 'Safe'">PAID</div>
+                                            <div class="dropdown-item"
+                                                (click)="setFilter('rentStatusFilter', 'NearDue')"
+                                                [class.active]="rentStatusFilter === 'NearDue'">NEAR DUE</div>
+                                            <div class="dropdown-item"
+                                                (click)="setFilter('rentStatusFilter', 'DueToday')"
+                                                [class.active]="rentStatusFilter === 'DueToday'">DUE TODAY</div>
+                                            <div class="dropdown-item"
+                                                (click)="setFilter('rentStatusFilter', 'Overdue')"
+                                                [class.active]="rentStatusFilter === 'Overdue'">OVERDUE</div>
+                                        </div>
                                     </div>
+                                    <span class="active-filter-label"
+                                        *ngIf="rentStatusFilter">{{rentStatusFilter}}</span>
                                 </div>
-                                <span class="active-filter-label" *ngIf="rentStatusFilter">{{rentStatusFilter}}</span>
-                            </div>
-                        </th>
-                        <th>
-                            <div class="th-content">
-                                Status
-                                <div class="filter-wrapper" (click)="toggleDropdown('guestStatusFilter', $event)">
-                                    <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
-                                        stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                        <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
-                                    </svg>
-                                    <div class="custom-dropdown-menu" *ngIf="openDropdown === 'guestStatusFilter'">
-                                        <div class="dropdown-item" (click)="setFilter('guestStatusFilter', '')"
-                                            [class.active]="!guestStatusFilter">ALL</div>
-                                        <div class="dropdown-item" (click)="setFilter('guestStatusFilter', 'Active')"
-                                            [class.active]="guestStatusFilter === 'Active'">ACTIVE</div>
-                                        <div class="dropdown-item" (click)="setFilter('guestStatusFilter', 'Notice')"
-                                            [class.active]="guestStatusFilter === 'Notice'">NOTICE</div>
-                                        <div class="dropdown-item" (click)="setFilter('guestStatusFilter', 'Disabled')"
-                                            [class.active]="guestStatusFilter === 'Disabled'">DISABLED</div>
+                            </th>
+                            <th>
+                                <div class="th-content">
+                                    Status
+                                    <div class="filter-wrapper" (click)="toggleDropdown('guestStatusFilter', $event)">
+                                        <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+                                            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3">
+                                            </polygon>
+                                        </svg>
+                                        <div class="custom-dropdown-menu" *ngIf="openDropdown === 'guestStatusFilter'">
+                                            <div class="dropdown-item" (click)="setFilter('guestStatusFilter', '')"
+                                                [class.active]="!guestStatusFilter">ALL</div>
+                                            <div class="dropdown-item"
+                                                (click)="setFilter('guestStatusFilter', 'Active')"
+                                                [class.active]="guestStatusFilter === 'Active'">ACTIVE</div>
+                                            <div class="dropdown-item"
+                                                (click)="setFilter('guestStatusFilter', 'Notice')"
+                                                [class.active]="guestStatusFilter === 'Notice'">NOTICE</div>
+                                            <div class="dropdown-item"
+                                                (click)="setFilter('guestStatusFilter', 'Disabled')"
+                                                [class.active]="guestStatusFilter === 'Disabled'">DISABLED</div>
+                                        </div>
                                     </div>
+                                    <span class="active-filter-label"
+                                        *ngIf="guestStatusFilter">{{guestStatusFilter}}</span>
                                 </div>
-                                <span class="active-filter-label" *ngIf="guestStatusFilter">{{guestStatusFilter}}</span>
-                            </div>
-                        </th>
-                        <th>
-                            <div class="th-content">Action</div>
-                        </th>
-                    </tr>
-                    <tr *ngFor="let g of filteredGuests" class="fade-in-row">
-                        <td (click)="viewGuest(g)" class="clickable-name">{{g.name}}</td>
-                        <td>
-                            <span class="rent-badge" [style.background]="g.rentType == 'Daily' ? '#E9D8FD' : '#BEE3F8'"
-                                [style.color]="g.rentType == 'Daily' ? '#44337A' : '#2A4365'">
-                                {{g.rentType || 'Regular'}}
-                            </span>
-                        </td>
-                        <td>{{g.roomNumber}}</td>
+                            </th>
+                            <th>
+                                <div class="th-content">Action</div>
+                            </th>
+                        </tr>
+                        <tr *ngFor="let g of filteredGuests" class="fade-in-row">
+                            <td (click)="viewGuest(g)" class="clickable-name">
+                                {{g.name}}
+                                <span *ngIf="g.noticeStatus === 'Pending'" class="notice-badge"></span>
+                            </td>
+                            <td>
+                                <span class="rent-badge"
+                                    [style.background]="g.rentType == 'Daily' ? '#E9D8FD' : '#BEE3F8'"
+                                    [style.color]="g.rentType == 'Daily' ? '#44337A' : '#2A4365'">
+                                    {{g.rentType || 'Regular'}}
+                                </span>
+                            </td>
+                            <td>{{g.roomNumber}}</td>
 
-                        <td>
-                            <span class="rent-badge" [ngClass]="getRentStatus(g).class">
-                                {{ getRentStatus(g).text }}
-                            </span>
-                        </td>
+                            <td>
+                                <span class="rent-badge" [ngClass]="getRentStatus(g).class">
+                                    {{ getRentStatus(g).text }}
+                                </span>
+                            </td>
 
-                        <td>
-                            <span *ngIf="!g.user.isActive" class="status-disabled-blink">Disabled</span>
-                            <span *ngIf="g.user.isActive && !g.isInNoticePeriod"
-                                class="status-active-blink">Active</span>
-                            <span *ngIf="g.user.isActive && g.isInNoticePeriod"
-                                class="status-notice-blink">Notice</span>
-                        </td>
-                        <td><button (click)="toggleGuest(g.id)">{{ g.user.isActive ? 'Disable' : 'Enable' }}</button>
-                        </td>
-                    </tr>
-                </table>
+                            <td>
+                                <span *ngIf="!g.user.isActive" class="status-disabled-blink">Disabled</span>
+                                <span *ngIf="g.user.isActive && !g.isInNoticePeriod"
+                                    class="status-active-blink">Active</span>
+                                <span *ngIf="g.user.isActive && g.isInNoticePeriod"
+                                    class="status-notice-blink">Notice</span>
+                            </td>
+                            <td><button (click)="toggleGuest(g.id)">{{ g.user.isActive ? 'Disable' : 'Enable'
+                                    }}</button>
+                            </td>
+                        </tr>
+                    </table>
+                </div>
             </div>
 
             <!-- Add Guest Modal -->
@@ -332,15 +463,15 @@
 
                         <div class="form-section-title">Room Allocation</div>
 
-                        <div class="form-row three-col">
-                            <div class="form-group">
+                        <div class="form-row four-col">
+                            <div class="form-group small-col">
                                 <label>Share</label>
                                 <select formControlName="shareType">
-                                    <option value="">Select</option>
+                                    <option value="">Any</option>
                                     <option *ngFor="let s of [1,2,3,4,5,6]" [value]="s">{{s}} Share</option>
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group small-col">
                                 <label>Type</label>
                                 <select formControlName="roomType">
                                     <option value="">Any</option>
@@ -348,20 +479,17 @@
                                     <option value="Non-AC">Non-AC</option>
                                 </select>
                             </div>
-                            <div class="form-group">
+                            <div class="form-group small-col">
                                 <label>Floor</label>
                                 <select formControlName="floorNumber">
                                     <option value="">Any</option>
                                     <option *ngFor="let f of [1,2,3,4,5,6,7,8]" [value]="f">{{f}}</option>
                                 </select>
                             </div>
-                        </div>
-
-                        <div class="form-row">
-                            <div class="form-group full-width">
-                                <label>Assign Room ({{availableRooms.length}} Available)</label>
+                            <div class="form-group large-col">
+                                <label>Assign Room ({{availableRooms.length}})</label>
                                 <select formControlName="roomNumber" [disabled]="availableRooms.length === 0">
-                                    <option value="" disabled>Select Room</option>
+                                    <option value="" disabled>Select</option>
                                     <option *ngFor="let r of availableRooms" [value]="r.roomNumber">
                                         {{r.roomNumber}}
                                     </option>
@@ -439,7 +567,8 @@
                                 'status-notice-blink': selectedGuest.user.isActive && selectedGuest.isInNoticePeriod,
                                 'status-disabled-blink': !selectedGuest.user.isActive
                             }">
-                            {{ !selectedGuest.user.isActive ? 'Disabled' : (selectedGuest.isInNoticePeriod ? 'Notice' :
+                            {{ !selectedGuest.user.isActive ? 'Disabled' : (selectedGuest.isInNoticePeriod ?
+                            'Notice' :
                             'Active') }}
                         </span>
                     </div>
@@ -448,7 +577,8 @@
                         style="background: #ebf8ff; border: 1px solid #bee3f8; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; display: flex; justify-content: space-between; align-items: center;">
                         <div>
                             <strong style="color: #2c5282;">Notice Request Pending</strong>
-                            <p style="margin: 0; font-size: 0.9rem; color: #4a5568;">This guest has requested to move
+                            <p style="margin: 0; font-size: 0.9rem; color: #4a5568;">This guest has requested to
+                                move
                                 out.</p>
                         </div>
                         <button class="action-btn" (click)="approveNotice(selectedGuest.id)"
@@ -529,11 +659,13 @@
                                 </div>
                                 <div class="info-row">
                                     <span class="info-label">Joining Date</span>
-                                    <span class="info-value">{{selectedGuest.joiningDate | date:'mediumDate'}}</span>
+                                    <span class="info-value">{{selectedGuest.joiningDate |
+                                        date:'mediumDate'}}</span>
                                 </div>
                                 <div class="info-row" *ngIf="!selectedGuest.isInNoticePeriod">
                                     <span class="info-label">Next Rent Due</span>
-                                    <span class="info-value" style="color: #e53e3e;">{{selectedGuest.rentDueDate |
+                                    <span class="info-value" style="color: #e53e3e;">{{selectedGuest.rentDueDate
+                                        |
                                         date:'mediumDate'}}</span>
                                 </div>
                                 <div class="info-row" *ngIf="selectedGuest.isInNoticePeriod">
@@ -556,7 +688,8 @@
                                 </div>
                                 <div class="info-row">
                                     <span class="info-label">Check-in</span>
-                                    <span class="info-value">{{selectedGuest.joiningDate | date:'shortDate'}}</span>
+                                    <span class="info-value">{{selectedGuest.joiningDate |
+                                        date:'shortDate'}}</span>
                                 </div>
                                 <div class="info-row">
                                     <span class="info-label">Check-out</span>
@@ -572,7 +705,8 @@
                                 </div>
                                 <div class="info-row" *ngIf="selectedGuest.lastPaidDate">
                                     <span class="info-label">Paid On</span>
-                                    <span class="info-value">{{selectedGuest.lastPaidDate | date:'short'}}</span>
+                                    <span class="info-value">{{selectedGuest.lastPaidDate |
+                                        date:'short'}}</span>
                                 </div>
                             </div>
                         </div>
@@ -596,9 +730,11 @@
                             <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
                             <polyline points="22 4 12 14.01 9 11.01"></polyline>
                         </svg>
-                        <h3 style="color: #2d3748; margin-bottom: 0.5rem; font-size: 1.25rem;">Approve Notice Request?
+                        <h3 style="color: #2d3748; margin-bottom: 0.5rem; font-size: 1.25rem;">Approve Notice
+                            Request?
                         </h3>
-                        <p style="color: #4a5568; font-size: 0.95rem;">This will start the guest's 30-day notice period
+                        <p style="color: #4a5568; font-size: 0.95rem;">This will start the guest's 30-day notice
+                            period
                             effective immediately.</p>
                     </div>
                     <div class="modal-actions" style="justify-content: center; gap: 1rem; display: flex;">
@@ -620,7 +756,8 @@
                             <path d="M3 12a9 9 0 1 0 9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"></path>
                             <path d="M3 3v5h5"></path>
                         </svg>
-                        <h3 style="color: #2d3748; margin-bottom: 0.5rem; font-size: 1.25rem;">Revert Notice Period?
+                        <h3 style="color: #2d3748; margin-bottom: 0.5rem; font-size: 1.25rem;">Revert Notice
+                            Period?
                         </h3>
                         <p style="color: #718096; line-height: 1.5;">
                             This will cancel the notice period and return the guest to regular status.
@@ -659,7 +796,8 @@
                                         (click)="toggleDropdown('complaintStatusFilter', $event)">
                                         <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor"
                                             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                                            <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3">
+                                            </polygon>
                                         </svg>
                                         <div class="custom-dropdown-menu"
                                             *ngIf="openDropdown === 'complaintStatusFilter'">
@@ -667,10 +805,12 @@
                                                 [class.active]="!complaintStatusFilter">ALL</div>
                                             <div class="dropdown-item"
                                                 (click)="setFilter('complaintStatusFilter', 'Registered')"
-                                                [class.active]="complaintStatusFilter === 'Registered'">REGISTERED</div>
+                                                [class.active]="complaintStatusFilter === 'Registered'">
+                                                REGISTERED</div>
                                             <div class="dropdown-item"
                                                 (click)="setFilter('complaintStatusFilter', 'InProgress')"
-                                                [class.active]="complaintStatusFilter === 'InProgress'">IN PROGRESS
+                                                [class.active]="complaintStatusFilter === 'InProgress'">IN
+                                                PROGRESS
                                             </div>
                                             <div class="dropdown-item"
                                                 (click)="setFilter('complaintStatusFilter', 'Solved')"
@@ -731,7 +871,8 @@
                             <div class="form-group" *ngIf="statusUpdateForm.get('status')?.value === 'InProgress'">
                                 <label>Estimated Resolution (Days)</label>
                                 <select formControlName="estimatedResolutionDays">
-                                    <option *ngFor="let d of [1,2,3,4,5]" [value]="d">{{d}} Day{{d > 1 ? 's' : ''}}
+                                    <option *ngFor="let d of [1,2,3,4,5]" [value]="d">{{d}} Day{{d > 1 ? 's' :
+                                        ''}}
                                     </option>
                                 </select>
                             </div>

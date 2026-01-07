@@ -69,11 +69,14 @@ namespace PG_Backend.Controllers
              if (guest.NoticeStatus == "Approved") return BadRequest("Already in notice period.");
 
 
-             // Validation: Must be >= 30 days before Next Due Date
-             var daysUntilDue = (guest.RentDueDate - DateTime.Now).TotalDays;
+             // Validation: Must be >= 30 days before Next Due Date (Fixed 30 days rule)
+             var today = DateTime.Today;
+             var dueDate = guest.RentDueDate.Date;
+             var daysUntilDue = (dueDate - today).TotalDays;
+
              if (daysUntilDue < 30)
              {
-                 return BadRequest($"Oops! You have only {Math.Ceiling(daysUntilDue)} days left until your next due date. At least 30 days are needed to raise a notice request.");
+                 return BadRequest($"Oops! You have only {daysUntilDue} days left until your next due date. At least 30 days are needed to raise a notice request.");
              }
 
 

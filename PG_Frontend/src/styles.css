@@ -29,6 +29,15 @@
     padding: 0;
 }
 
+html,
+body {
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    overflow-x: hidden;
+    /* Prevent horizontal scrollbar */
+}
+
 body {
     font-family: 'Outfit', sans-serif;
     background: var(--bg-color);

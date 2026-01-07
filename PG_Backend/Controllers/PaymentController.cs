@@ -60,7 +60,7 @@ namespace PG_Backend.Controllers
             // Logic for Monthly Rent Update
             if (guest.RentType == "Regular") 
             {
-                guest.RentDueDate = guest.RentDueDate.AddMonths(1);
+                guest.RentDueDate = guest.RentDueDate.AddDays(30);
             }
             
             // Record Transaction

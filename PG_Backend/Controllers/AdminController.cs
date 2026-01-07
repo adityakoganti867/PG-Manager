@@ -30,7 +30,7 @@ namespace PG_Backend.Controllers
             if (await _context.Users.AnyAsync(u => u.Mobile == dto.Mobile))
                 return BadRequest("User already exists");
 
-            var user = new User { Mobile = dto.Mobile, Password = "password123", Role = UserRole.Supervisor, IsActive = true };
+            var user = new User { Mobile = dto.Mobile, Password = "", Role = UserRole.Supervisor, IsActive = true };
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
@@ -85,7 +85,7 @@ namespace PG_Backend.Controllers
             }
             else
             {
-                rentDueDate = joiningDate.AddMonths(1);
+                rentDueDate = joiningDate.AddDays(30);
             }
 
             // Check and update Room Availability
@@ -219,6 +219,16 @@ namespace PG_Backend.Controllers
             
             await _context.SaveChangesAsync();
             return Ok("Notice Period Reverted");
+        }
+        [HttpPost("reset-password/{userId}")]
+        public async Task<IActionResult> ResetPassword(int userId)
+        {
+            var user = await _context.Users.FindAsync(userId);
+            if (user == null) return NotFound("User not found");
+
+            user.Password = ""; // Clear password to force reset on next login
+            await _context.SaveChangesAsync();
+            return Ok("Password Reset Successfully");
         }
     }
 

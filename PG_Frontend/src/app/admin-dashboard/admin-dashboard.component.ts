@@ -23,9 +23,19 @@ export class AdminDashboardComponent implements OnInit {
     // Complaint Filters
     complaintStatusFilter: string = '';
 
+    get pendingNoticeCount(): number {
+        return this.guests ? this.guests.filter(g => g.noticeStatus === 'Pending').length : 0;
+    }
+
+    get pendingNoticeGuests(): any[] {
+        return this.guests ? this.guests.filter(g => g.noticeStatus === 'Pending') : [];
+    }
+
     selectedGuest: any = null;
 
     showAddSupervisorModal: boolean = false;
+    showResetPasswordModal: boolean = false;
+    supervisorToResetId: number | null = null;
     showAddGuestModal: boolean = false;
     showStatusUpdateModal: boolean = false;
     selectedComplaint: any = null;
@@ -355,17 +365,50 @@ export class AdminDashboardComponent implements OnInit {
 
     addSupervisor() {
         if (this.supervisorForm.valid) {
-            this.api.addSupervisor(this.supervisorForm.value).subscribe(() => {
-                alert('Supervisor Added');
-                this.loadSupervisors();
-                this.supervisorForm.reset();
-                this.closeAddSupervisor();
+            this.api.addSupervisor(this.supervisorForm.value).subscribe({
+                next: () => {
+                    this.showToast('Supervisor Added Successfully');
+                    this.loadSupervisors();
+                    this.supervisorForm.reset();
+                    this.closeAddSupervisor();
+                },
+                error: (err) => {
+                    console.error('Add Supervisor Error:', err);
+                    if (err.error && (err.error.includes('mobile') || err.error.includes('exists'))) {
+                        // Set manual error on the form control
+                        this.supervisorForm.get('mobile')?.setErrors({ duplicate: true });
+                    } else {
+                        alert(err.error || 'Failed to add supervisor. Please try again.');
+                    }
+                }
             });
         }
     }
 
     toggleSupervisor(id: number) {
         this.api.toggleSupervisor(id).subscribe(() => this.loadSupervisors());
+    }
+
+    resetPassword(id: number) {
+        this.supervisorToResetId = id;
+        this.showResetPasswordModal = true;
+    }
+
+    confirmResetPassword() {
+        if (this.supervisorToResetId) {
+            this.api.resetPassword(this.supervisorToResetId).subscribe({
+                next: () => {
+                    this.showToast('Password Reset Successfully');
+                    this.closeResetPasswordModal();
+                },
+                error: (err) => alert('Failed to reset password')
+            });
+        }
+    }
+
+    closeResetPasswordModal() {
+        this.showResetPasswordModal = false;
+        this.supervisorToResetId = null;
     }
 
     toggleGuest(id: number) {
