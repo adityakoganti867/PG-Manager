@@ -1,0 +1,59 @@
+name: Build and Deploy Frontend - PgFrontend
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - 'PG_Frontend/**'
+      - '.github/workflows/main_pgfrontend.yml'
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24.x'
+
+      - name: Install and Build
+        working-directory: PG_Frontend
+        run: |
+          npm install
+          npm run build -- --configuration production
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-app
+          path: PG_Frontend/dist/pg-frontend/browser
+
+  deploy:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-app
+          path: ./webapp
+
+      - name: Login to Azure
+        uses: azure/login@v2
+        with:
+          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_96E0B388BD2845FAAF24686B8AD23FD2 }}
+          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_C2BA63E4E5DA4C3389273F6D06EDFF96 }}
+          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_1F7F575202054F4A827E1FF38B101666 }}
+
+      - name: Deploy to Azure Web App
+        uses: azure/webapps-deploy@v3
+        with:
+          app-name: 'PgFrontend'
+          package: ./webapp
