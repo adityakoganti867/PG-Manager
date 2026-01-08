@@ -12,8 +12,8 @@ using PG_Backend.Data;
 namespace PG_Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20260106100754_AddTransactions")]
-    partial class AddTransactions
+    [Migration("20260107131424_UpdateUserAndPropertyForLogin")]
+    partial class UpdateUserAndPropertyForLogin
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -76,11 +76,46 @@ namespace PG_Backend.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Occupation")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("UserId")
+                        .HasColumnType("int");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PropertyId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("Guests");
+                });
+
+            modelBuilder.Entity("PG_Backend.Models.GuestStay", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
                     b.Property<decimal>("AdvanceAmount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("datetime2");
+
+                    b.Property<int>("GuestId")
+                        .HasColumnType("int");
 
                     b.Property<bool>("IsInNoticePeriod")
                         .HasColumnType("bit");
@@ -91,18 +126,10 @@ namespace PG_Backend.Migrations
                     b.Property<DateTime?>("LastPaidDate")
                         .HasColumnType("datetime2");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.Property<DateTime?>("NoticeStartDate")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("NoticeStatus")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<string>("Occupation")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -111,9 +138,11 @@ namespace PG_Backend.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<decimal?>("PerDayRent")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<decimal>("RentAmount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<DateTime>("RentDueDate")
@@ -123,18 +152,98 @@ namespace PG_Backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("RoomNumber")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("UserId")
+                    b.Property<int>("RoomId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("UserId");
+                    b.HasIndex("GuestId");
 
-                    b.ToTable("Guests");
+                    b.HasIndex("RoomId");
+
+                    b.ToTable("GuestStays");
+                });
+
+            modelBuilder.Entity("PG_Backend.Models.PGProperty", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("AdminId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("OwnerName")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AdminId");
+
+                    b.ToTable("Properties");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Address = "Main Road, City",
+                            AdminId = 1,
+                            Name = "Default PG",
+                            OwnerName = "Aditya Koganti"
+                        });
+                });
+
+            modelBuilder.Entity("PG_Backend.Models.PropertySetting", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("int");
+
+                    b.Property<string>("Value")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PropertyId");
+
+                    b.ToTable("PropertySettings");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = 1,
+                            Key = "UpiId",
+                            PropertyId = 1,
+                            Value = "9346765275@ybl"
+                        },
+                        new
+                        {
+                            Id = 2,
+                            Key = "UpiName",
+                            PropertyId = 1,
+                            Value = "Ramesh Kumar"
+                        });
                 });
 
             modelBuilder.Entity("PG_Backend.Models.Room", b =>
@@ -149,6 +258,9 @@ namespace PG_Backend.Migrations
                         .HasColumnType("int");
 
                     b.Property<int>("FloorNumber")
+                        .HasColumnType("int");
+
+                    b.Property<int>("PropertyId")
                         .HasColumnType("int");
 
                     b.Property<string>("RoomNumber")
@@ -166,6 +278,8 @@ namespace PG_Backend.Migrations
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PropertyId");
 
                     b.ToTable("Rooms");
                 });
@@ -185,10 +299,15 @@ namespace PG_Backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
+                    b.Property<int>("PropertyId")
+                        .HasColumnType("int");
+
                     b.Property<int>("UserId")
                         .HasColumnType("int");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("PropertyId");
 
                     b.HasIndex("UserId");
 
@@ -204,6 +323,7 @@ namespace PG_Backend.Migrations
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
                     b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
                         .HasColumnType("decimal(18,2)");
 
                     b.Property<int>("GuestId")
@@ -225,6 +345,10 @@ namespace PG_Backend.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Utr")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
@@ -257,6 +381,10 @@ namespace PG_Backend.Migrations
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
+                    b.Property<string>("Username")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
                     b.HasKey("Id");
 
                     b.ToTable("Users");
@@ -264,11 +392,21 @@ namespace PG_Backend.Migrations
                     b.HasData(
                         new
                         {
+                            Id = 100,
+                            IsActive = true,
+                            Mobile = "adityarajat",
+                            Password = "adityarajat",
+                            Role = 3,
+                            Username = "adityarajat"
+                        },
+                        new
+                        {
                             Id = 1,
                             IsActive = true,
                             Mobile = "admin",
                             Password = "admin",
-                            Role = 0
+                            Role = 0,
+                            Username = "admin"
                         });
                 });
 
@@ -277,7 +415,7 @@ namespace PG_Backend.Migrations
                     b.HasOne("PG_Backend.Models.Guest", "Guest")
                         .WithMany()
                         .HasForeignKey("GuestId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Guest");
@@ -285,22 +423,90 @@ namespace PG_Backend.Migrations
 
             modelBuilder.Entity("PG_Backend.Models.Guest", b =>
                 {
+                    b.HasOne("PG_Backend.Models.PGProperty", "Property")
+                        .WithMany()
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
                     b.HasOne("PG_Backend.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Property");
 
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("PG_Backend.Models.GuestStay", b =>
+                {
+                    b.HasOne("PG_Backend.Models.Guest", "Guest")
+                        .WithMany()
+                        .HasForeignKey("GuestId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.HasOne("PG_Backend.Models.Room", "Room")
+                        .WithMany()
+                        .HasForeignKey("RoomId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
+                    b.Navigation("Guest");
+
+                    b.Navigation("Room");
+                });
+
+            modelBuilder.Entity("PG_Backend.Models.PGProperty", b =>
+                {
+                    b.HasOne("PG_Backend.Models.User", "Admin")
+                        .WithMany()
+                        .HasForeignKey("AdminId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Admin");
+                });
+
+            modelBuilder.Entity("PG_Backend.Models.PropertySetting", b =>
+                {
+                    b.HasOne("PG_Backend.Models.PGProperty", "Property")
+                        .WithMany()
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Property");
+                });
+
+            modelBuilder.Entity("PG_Backend.Models.Room", b =>
+                {
+                    b.HasOne("PG_Backend.Models.PGProperty", "Property")
+                        .WithMany()
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Property");
+                });
+
             modelBuilder.Entity("PG_Backend.Models.Supervisor", b =>
                 {
+                    b.HasOne("PG_Backend.Models.PGProperty", "Property")
+                        .WithMany()
+                        .HasForeignKey("PropertyId")
+                        .OnDelete(DeleteBehavior.NoAction)
+                        .IsRequired();
+
                     b.HasOne("PG_Backend.Models.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Property");
 
                     b.Navigation("User");
                 });
@@ -310,7 +516,7 @@ namespace PG_Backend.Migrations
                     b.HasOne("PG_Backend.Models.Guest", "Guest")
                         .WithMany()
                         .HasForeignKey("GuestId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.NoAction)
                         .IsRequired();
 
                     b.Navigation("Guest");

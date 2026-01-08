@@ -221,7 +221,38 @@ td:last-child {
 .status-notice {
     background: #ebf8ff;
     color: #3182ce;
+    border: 1px solid #bee3f8;
     box-shadow: 0 0 10px rgba(49, 130, 206, 0.2);
+}
+
+.status-notice::before {
+    background-color: #3182ce;
+    box-shadow: 0 0 8px #3182ce;
+    animation: neon-blink-blue 1.5s infinite;
+}
+
+.qr-container {
+    padding: 1rem;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #edf2f7;
+    margin: 1.5rem 0;
+}
+
+@keyframes neon-blink-blue {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: scale(1);
+        box-shadow: 0 0 12px #3182ce;
+    }
+
+    50% {
+        opacity: 0.4;
+        transform: scale(0.8);
+        box-shadow: 0 0 2px #3182ce;
+    }
 }
 
 @keyframes neon-blink-red {
@@ -301,6 +332,29 @@ td:last-child {
     color: #2d3748;
     font-size: 1.4rem;
     font-weight: 800;
+}
+
+.utr-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 1rem;
+    margin-bottom: 2rem;
+    outline: none;
+    transition: all 0.2s ease;
+    background: #f8fafc;
+}
+
+.utr-input:focus {
+    border-color: #5a67d8;
+    background: white;
+    box-shadow: 0 0 0 3px rgba(90, 103, 216, 0.1);
+}
+
+.utr-input.input-error {
+    border-color: #e53e3e !important;
+    background: #fff5f5;
 }
 
 /* Forms & Modals */

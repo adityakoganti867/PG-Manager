@@ -21,6 +21,7 @@ export class GuestDashboardComponent implements OnInit {
     user: any;
     activeTab: string = 'complaints';
     showComplaintModal: boolean = false;
+    isMobile: boolean = false;
     complaintForm: FormGroup;
     errorMessage: string = '';
 
@@ -46,6 +47,7 @@ export class GuestDashboardComponent implements OnInit {
     }
 
     ngOnInit() {
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
         if (this.user) {
             this.loadProfile();
             this.loadComplaints();
@@ -168,72 +170,47 @@ export class GuestDashboardComponent implements OnInit {
 
 
 
+    showPaymentModal: boolean = false;
+    paymentUtr: string = '';
+    upiUrl: string = '';
+
     payRent() {
         if (!this.profile || !this.profile.rentAmount) return;
 
-        this.api.createOrder(this.profile.rentAmount).subscribe({
+        this.api.createOrder(this.profile.id, this.profile.rentAmount).subscribe({
             next: (res: any) => {
-                this.openRazorpay(res.orderId);
+                this.upiUrl = res.upiUrl;
+                this.showPaymentModal = true;
             },
-            error: (err) => alert('Failed to create payment order. ' + err.message)
+            error: (err) => alert('Failed to initiate payment. ' + err.message)
         });
     }
 
+    submitUtr() {
+        if (!this.paymentUtr || this.paymentUtr.length < 12) {
+            alert('Please enter a valid 12-digit UTR number.');
+            return;
+        }
 
-    openRazorpay(orderId: string) {
-        const options = {
-            "key": "rzp_test_S0VAf9TqG9Ylvv", // Enter the Key ID generated from the Dashboard
-
-            "amount": this.profile.rentAmount * 100, // Amount is in currency subunits. Default currency is INR.
-            "currency": "INR",
-            "name": "PG Management",
-            "description": "Rent Payment",
-            "image": "https://example.com/your_logo",
-            "order_id": orderId,
-            "handler": (response: any) => {
-                this.verifyPayment(response);
+        this.api.verifyPayment(this.profile.id, this.paymentUtr, this.profile.rentAmount).subscribe({
+            next: (res: any) => {
+                this.showPaymentModal = false;
+                this.paymentUtr = '';
+                this.loadProfile();
+                this.loadTransactions();
+                alert('Payment proof submitted for verification. Admin will approve it shortly.');
             },
-            "prefill": {
-                "name": this.profile.name,
-                "contact": this.user.mobile
-            },
-            "theme": {
-                "color": "#3399cc"
-            }
-        };
-
-        const rzp1 = new (window as any).Razorpay(options);
-        rzp1.on('payment.failed', function (response: any) {
-            alert(response.error.description);
+            error: (err) => alert('Failed to submit payment proof.')
         });
-        rzp1.open();
     }
 
+    closePaymentModal() {
+        this.showPaymentModal = false;
+        this.paymentUtr = '';
+    }
 
-    verifyPayment(response: any) {
-        this.api.verifyPayment({
-            guestId: this.profile.id,
-            orderId: response.razorpay_order_id,
-            paymentId: response.razorpay_payment_id,
-            signature: response.razorpay_signature
-        }).subscribe({
-            next: (res: any) => {
-                if (res.status === 'success') {
-                    // Instant UI Update
-                    if (this.profile) {
-                        this.profile.paymentStatus = 'Paid';
-                        this.profile.lastPaidDate = new Date();
-                        if (res.nextDueDate) {
-                            this.profile.rentDueDate = res.nextDueDate;
-                        }
-                    }
-                    this.loadProfile(); // Sync with backend
-                } else {
-                    console.error('Payment verification failed');
-                }
-            },
-            error: (err) => console.error('Payment verification error', err)
-        });
+    encodeUrl(url: string): string {
+        return encodeURIComponent(url);
     }
 
     getDaysLeftForExit(): number {

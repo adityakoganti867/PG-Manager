@@ -1,14 +1,21 @@
 <div class="dashboard">
     <nav class="sidebar">
-        <h3>Admin</h3>
+        <h3>{{ user?.propertyName || 'Admin' }}</h3>
         <button (click)="switchTab('supervisors')" [class.active]="activeTab==='supervisors'">Supervisors</button>
         <button (click)="switchTab('rooms')" [class.active]="activeTab==='rooms'">Rooms</button>
         <button (click)="switchTab('guests')" [class.active]="activeTab==='guests'">
             Guests
             <span *ngIf="pendingNoticeCount > 0" class="sidebar-badge">{{pendingNoticeCount}}</span>
         </button>
-        <button (click)="switchTab('complaints')" [class.active]="activeTab==='complaints'">Complaints</button>
-        <button (click)="switchTab('transactions')" [class.active]="activeTab==='transactions'">Transactions</button>
+        <button (click)="switchTab('complaints')" [class.active]="activeTab==='complaints'">
+            Complaints
+            <span *ngIf="registeredComplaintsCount > 0" class="sidebar-badge">{{registeredComplaintsCount}}</span>
+        </button>
+        <button (click)="switchTab('transactions')" [class.active]="activeTab==='transactions'">
+            Transactions
+            <span *ngIf="pendingVerificationCount > 0" class="sidebar-badge">{{pendingVerificationCount}}</span>
+        </button>
+        <button (click)="switchTab('settings')" [class.active]="activeTab==='settings'">Settings</button>
     </nav>
     <main class="content">
 
@@ -418,8 +425,19 @@
                                 <span *ngIf="g.user.isActive && g.isInNoticePeriod"
                                     class="status-notice-blink">Notice</span>
                             </td>
-                            <td><button (click)="toggleGuest(g.id)">{{ g.user.isActive ? 'Disable' : 'Enable'
-                                    }}</button>
+                            <td>
+                                <div style="display: flex; gap: 8px;">
+                                    <button (click)="toggleGuest(g.id)">{{ g.user.isActive ? 'Disable' : 'Enable'
+                                        }}</button>
+                                    <button (click)="resetPassword(g.user.id)" class="reset-btn" title="Reset Password">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                            stroke-linecap="round" stroke-linejoin="round"
+                                            style="width: 14px; height: 14px;">
+                                            <path d="M2.5 2v6h6M21.5 22v-6h-6"></path>
+                                            <path d="M22 11.5A10 10 0 0 0 3.2 7.2M2 12.5a10 10 0 0 0 18.8 4.3"></path>
+                                        </svg>
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     </table>
@@ -453,7 +471,12 @@
                         <div class="form-row">
                             <div class="form-group">
                                 <label>Full Name</label>
-                                <input formControlName="name" placeholder="John Doe">
+                                <input formControlName="name" placeholder="John Doe" maxlength="10">
+                                <small
+                                    *ngIf="guestForm.get('name')?.touched && guestForm.get('name')?.errors?.['maxlength']"
+                                    style="color: #e53e3e; font-size: 0.7rem;">
+                                    Max 10 characters allowed
+                                </small>
                             </div>
                             <div class="form-group">
                                 <label>Mobile Number</label>
@@ -895,41 +918,131 @@
         <div *ngIf="activeTab === 'transactions'">
             <div class="header-action">
                 <h2>Transaction History</h2>
+                <div class="filter-group">
+                    <div class="custom-dropdown">
+                        <button class="dropdown-trigger" (click)="toggleDropdown('transactionStatus', $event)">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                style="width: 16px; margin-right: 8px;">
+                                <polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon>
+                            </svg>
+                            {{ transactionStatusFilter || 'All Status' }}
+                        </button>
+                        <div class="dropdown-menu" [class.show]="openDropdown === 'transactionStatus'">
+                            <div class="dropdown-item" (click)="setFilter('transactionStatusFilter', '')">All Status
+                            </div>
+                            <div class="dropdown-item" (click)="setFilter('transactionStatusFilter', 'Pending')">Pending
+                            </div>
+                            <div class="dropdown-item" (click)="setFilter('transactionStatusFilter', 'Success')">
+                                Approved / Success</div>
+                            <div class="dropdown-item" (click)="setFilter('transactionStatusFilter', 'Rejected')">Failed
+                                / Rejected</div>
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="list">
-                <h3>All Payments</h3>
+                <h3>Payment Records</h3>
                 <table>
                     <thead>
                         <tr>
-                            <th>Date</th>
-                            <th>Guest</th>
-                            <th>Room</th>
-                            <th>Amount</th>
-                            <th>Type</th>
-                            <th>Status</th>
+                            <th style="width: 18%;">Date</th>
+                            <th style="width: 15%;">Guest</th>
+                            <th style="width: 8%;">Room</th>
+                            <th style="width: 10%;">Amount</th>
+                            <th style="width: 10%;">Type</th>
+                            <th style="width: 14%;">UTR</th>
+                            <th style="width: 10%;">Status</th>
+                            <th style="width: 15%;">Action</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <tr *ngFor="let t of transactions" class="fade-in-row">
-                            <td>{{t.paymentDate | date:'medium'}}</td>
-                            <td style="font-weight: 600;">{{t.guestName}}</td>
-                            <td>{{t.roomNumber}}</td>
-                            <td>₹{{t.amount}}</td>
-                            <td>{{t.type}}</td>
-                            <td>
-                                <span class="status-badge"
-                                    style="background: #f0fff4; color: #38a169; border: 1px solid #c6f6d5;">
+                        <tr *ngFor="let t of filteredTransactions" class="fade-in-row">
+                            <td style="width: 18%;">{{t.paymentDate | date:'medium'}}</td>
+                            <td style="width: 15%; font-weight: 600;">{{t.guestName}}</td>
+                            <td style="width: 8%;">{{t.roomNumber}}</td>
+                            <td style="width: 10%;">₹{{t.amount}}</td>
+                            <td style="width: 10%;">{{t.type}}</td>
+                            <td style="width: 14%;"><code
+                                    style="background: #edf2f7; padding: 2px 6px; border-radius: 4px;">{{t.utr || 'N/A'}}</code>
+                            </td>
+                            <td style="width: 10%;">
+                                <span class="status-badge" [ngClass]="{
+                                    'status-active': t.status === 'Success',
+                                    'status-notice': t.status === 'Pending',
+                                    'status-disabled': t.status === 'Rejected'
+                                }">
                                     {{t.status}}
                                 </span>
                             </td>
+                            <td style="width: 15%;">
+                                <div style="display: flex; gap: 8px;" *ngIf="t.status === 'Pending'">
+                                    <button (click)="approvePayment(t.id)" class="premium-approve-btn">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                            style="width: 14px;">
+                                            <polyline points="20 6 9 17 4 12"></polyline>
+                                        </svg>
+                                        Approve
+                                    </button>
+                                    <button (click)="rejectPayment(t.id)" class="premium-reject-btn">
+                                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+                                            style="width: 14px;">
+                                            <line x1="18" y1="6" x2="6" y2="18"></line>
+                                            <line x1="6" y1="6" x2="18" y2="18"></line>
+                                        </svg>
+                                        Reject
+                                    </button>
+                                </div>
+                            </td>
                         </tr>
-                        <tr *ngIf="transactions.length === 0">
-                            <td colspan="6" style="text-align: center; padding: 3rem; color: #718096;">
-                                No transactions found.
+                        <tr *ngIf="filteredTransactions.length === 0">
+                            <td colspan="8" style="text-align: center; padding: 3rem; color: #718096;">
+                                No transactions found matching this filter.
                             </td>
                         </tr>
                     </tbody>
                 </table>
+            </div>
+        </div>
+
+        <!-- Settings Tab -->
+        <div *ngIf="activeTab === 'settings'" class="fade-in">
+            <div class="header-action">
+                <h2>Application Settings</h2>
+            </div>
+
+            <div class="stats-grid" style="grid-template-columns: 1fr; max-width: 600px;">
+                <div class="stat-card" style="padding: 2.5rem;">
+                    <h3 style="margin-top: 0; display: flex; align-items: center; gap: 10px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            style="width: 24px;">
+                            <rect x="2" y="5" width="20" height="14" rx="2"></rect>
+                            <line x1="2" y1="10" x2="22" y2="10"></line>
+                        </svg>
+                        UPI Payment Configuration
+                    </h3>
+                    <p style="color: #718096; margin-bottom: 2rem;">Changing these details will update the payment QR
+                        code for all guests immediately.</p>
+
+                    <div class="stylish-form">
+                        <div class="form-group">
+                            <label>UPI ID (VPA)</label>
+                            <input type="text" [(ngModel)]="upiSettings.upiId" placeholder="e.g., 9346765275@ybl"
+                                style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Account Holder Name</label>
+                            <input type="text" [(ngModel)]="upiSettings.upiName" placeholder="e.g., Ramesh Kumar"
+                                style="width: 100%; padding: 12px; border: 1px solid #ddd; border-radius: 8px;">
+                        </div>
+
+                        <div style="margin-top: 2rem;">
+                            <button class="action-btn" (click)="updateUpiSettings()" style="width: 100%;">
+                                Save UPI Configuration
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>

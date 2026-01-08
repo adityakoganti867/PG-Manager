@@ -3,6 +3,7 @@ import { Component, OnInit, HostListener } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormBuilder, FormGroup, ReactiveFormsModule, FormsModule, Validators } from '@angular/forms';
 import { ApiService } from '../services/api.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
     selector: 'app-admin-dashboard',
@@ -19,6 +20,7 @@ export class AdminDashboardComponent implements OnInit {
     guests: any[] = [];
     complaints: any[] = [];
     transactions: any[] = [];
+    user: any;
 
     // Complaint Filters
     complaintStatusFilter: string = '';
@@ -31,20 +33,32 @@ export class AdminDashboardComponent implements OnInit {
         return this.guests ? this.guests.filter(g => g.noticeStatus === 'Pending') : [];
     }
 
+    get registeredComplaintsCount(): number {
+        return this.complaints ? this.complaints.filter(c => c.status === 'Registered').length : 0;
+    }
+
+    get pendingVerificationCount(): number {
+        return this.transactions ? this.transactions.filter(t => t.status === 'Pending').length : 0;
+    }
+
     selectedGuest: any = null;
 
     showAddSupervisorModal: boolean = false;
     showResetPasswordModal: boolean = false;
-    supervisorToResetId: number | null = null;
+    userToResetId: number | null = null;
     showAddGuestModal: boolean = false;
     showStatusUpdateModal: boolean = false;
     selectedComplaint: any = null;
     statusUpdateForm: FormGroup;
 
+    settings: any[] = [];
+    upiSettings = { upiId: '', upiName: '' };
+
     // Filters
     guestStatusFilter: string = '';
     rentStatusFilter: string = '';
     guestTypeFilter: string = '';
+    transactionStatusFilter: string = '';
 
     // Toast Notification
     showSuccessToast: boolean = false;
@@ -64,7 +78,8 @@ export class AdminDashboardComponent implements OnInit {
     availableRooms: any[] = [];
     showAddRoomModal: boolean = false;
 
-    constructor(private fb: FormBuilder, private api: ApiService) {
+    constructor(private fb: FormBuilder, private api: ApiService, private auth: AuthService) {
+        this.user = this.auth.currentUserValue;
         this.supervisorForm = this.fb.group({
             name: ['', Validators.required],
             mobile: ['', Validators.required],
@@ -85,7 +100,7 @@ export class AdminDashboardComponent implements OnInit {
         });
 
         this.guestForm = this.fb.group({
-            name: ['', Validators.required],
+            name: ['', [Validators.required, Validators.maxLength(10)]],
             mobile: ['', Validators.required],
 
             // Room selection flow
@@ -133,6 +148,7 @@ export class AdminDashboardComponent implements OnInit {
         this.loadComplaints();
         this.loadTransactions();
         this.loadRooms();
+        this.loadSettings();
 
         // Listen to changes to recalculate
         this.guestForm.get('rentType')?.valueChanges.subscribe(() => this.onRentTypeChange());
@@ -144,6 +160,36 @@ export class AdminDashboardComponent implements OnInit {
         this.guestForm.get('shareType')?.valueChanges.subscribe(() => this.loadAvailableRooms());
         this.guestForm.get('floorNumber')?.valueChanges.subscribe(() => this.loadAvailableRooms());
         this.guestForm.get('roomType')?.valueChanges.subscribe(() => this.loadAvailableRooms());
+    }
+
+    get filteredTransactions(): any[] {
+        if (!this.transactions) return [];
+        return this.transactions.filter(t => {
+            const matchesStatus = !this.transactionStatusFilter || t.status === this.transactionStatusFilter;
+            return matchesStatus;
+        });
+    }
+
+    loadSettings() {
+        this.api.getSettings().subscribe((data: any) => {
+            this.settings = data;
+            const upiId = data.find((s: any) => s.key === 'UpiId')?.value;
+            const upiName = data.find((s: any) => s.key === 'UpiName')?.value;
+            this.upiSettings = {
+                upiId: upiId || '',
+                upiName: upiName || ''
+            };
+        });
+    }
+
+    updateUpiSettings() {
+        this.api.updateUpiSettings(this.upiSettings).subscribe({
+            next: () => {
+                this.showToast('UPI Settings Updated');
+                this.loadSettings();
+            },
+            error: (err) => alert('Failed to update settings')
+        });
     }
 
     loadAvailableRooms() {
@@ -173,11 +219,14 @@ export class AdminDashboardComponent implements OnInit {
 
     addRoom() {
         if (this.roomForm.valid) {
-            this.api.addRoom(this.roomForm.value).subscribe(() => {
-                alert('Room Added');
-                this.loadRooms();
-                this.roomForm.reset({ floorNumber: 1, sharingType: 1, roomType: 'Non-AC' });
-                this.closeAddRoom();
+            this.api.addRoom(this.roomForm.value).subscribe({
+                next: () => {
+                    this.showToast('Room Added Successfully');
+                    this.loadRooms();
+                    this.roomForm.reset({ floorNumber: 1, sharingType: 1, roomType: 'Non-AC' });
+                    this.closeAddRoom();
+                },
+                error: (err) => alert(err.error || 'Failed to add room')
             });
         }
     }
@@ -323,6 +372,25 @@ export class AdminDashboardComponent implements OnInit {
         this.api.getComplaints().subscribe((data: any) => this.complaints = data);
     }
 
+    approvePayment(txId: number) {
+        if (confirm('Verify that you received the payment in your bank account?')) {
+            this.api.approvePayment(txId).subscribe(() => {
+                this.showToast('Payment Approved');
+                this.loadTransactions();
+                this.loadGuests();
+            });
+        }
+    }
+
+    rejectPayment(txId: number) {
+        if (confirm('Reject this payment?')) {
+            this.api.rejectPayment(txId).subscribe(() => {
+                this.showToast('Payment Rejected');
+                this.loadTransactions();
+            });
+        }
+    }
+
     loadTransactions() {
         this.api.getAllTransactions().subscribe({
             next: (data: any) => this.transactions = data,
@@ -390,13 +458,13 @@ export class AdminDashboardComponent implements OnInit {
     }
 
     resetPassword(id: number) {
-        this.supervisorToResetId = id;
+        this.userToResetId = id;
         this.showResetPasswordModal = true;
     }
 
     confirmResetPassword() {
-        if (this.supervisorToResetId) {
-            this.api.resetPassword(this.supervisorToResetId).subscribe({
+        if (this.userToResetId) {
+            this.api.resetPassword(this.userToResetId).subscribe({
                 next: () => {
                     this.showToast('Password Reset Successfully');
                     this.closeResetPasswordModal();
@@ -408,7 +476,7 @@ export class AdminDashboardComponent implements OnInit {
 
     closeResetPasswordModal() {
         this.showResetPasswordModal = false;
-        this.supervisorToResetId = null;
+        this.userToResetId = null;
     }
 
     toggleGuest(id: number) {

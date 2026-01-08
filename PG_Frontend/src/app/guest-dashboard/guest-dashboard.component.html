@@ -1,6 +1,6 @@
 <div class="dashboard">
     <nav class="sidebar">
-        <h3>Guest</h3>
+        <h3>{{ user?.propertyName || 'Guest' }}</h3>
         <button (click)="switchTab('complaints')" [class.active]="activeTab==='complaints'">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"
                 stroke-linejoin="round" style="width: 18px; margin-right: 12px;">
@@ -183,19 +183,29 @@
                         <h3>Monthly Rent Payment</h3>
 
                         <!-- When Rent is Due -->
-                        <div *ngIf="profile.isRentDue">
+                        <div *ngIf="profile.isRentDue && profile.paymentStatus !== 'Pending Verification'">
                             <p style="color: #e53e3e; font-weight: 600;">Rent Due: ₹{{profile.rentAmount}}</p>
                             <p class="small-text">Due since: {{profile.rentDueDate | date}}</p>
                             <button class="action-btn" (click)="payRent()" style="margin-top: 1rem;">Pay Monthly
                                 Rent</button>
                         </div>
 
+                        <!-- Pending Verification -->
+                        <div *ngIf="profile.paymentStatus === 'Pending Verification'">
+                            <div class="status-badge"
+                                style="background: #fffaf0; color: #c05621; border: 1px solid #fbd38d;">
+                                Verification Pending
+                            </div>
+                            <p style="margin-top: 1rem; color: #718096; font-size: 0.9rem;">
+                                Your payment proof is being verified by the admin. Please wait.
+                            </p>
+                        </div>
+
 
                         <!-- When Rent is Paid / Not Due -->
-                        <div *ngIf="!profile.isRentDue">
+                        <div *ngIf="!profile.isRentDue && profile.paymentStatus === 'Paid'">
                             <div class="status-badge"
                                 style="background: #f0fff4; color: #38a169; border: 1px solid #c6f6d5; margin-top: 10px;">
-
                                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
                                     style="width: 16px; margin-right: 6px;">
                                     <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
@@ -252,11 +262,27 @@
 
                     <div class="detail-section" *ngIf="profile.rentType === 'Daily'">
                         <h3>Payment</h3>
-                        <div *ngIf="profile.paymentStatus !== 'Paid'">
+
+                        <!-- Ready to Pay -->
+                        <div
+                            *ngIf="profile.paymentStatus !== 'Paid' && profile.paymentStatus !== 'Pending Verification'">
                             <p><strong>Total Payable:</strong> ₹{{profile.rentAmount}}</p>
                             <button class="action-btn" (click)="payRent()" style="margin-top: 1rem;">Pay
                                 Now</button>
                         </div>
+
+                        <!-- Verification Pending -->
+                        <div *ngIf="profile.paymentStatus === 'Pending Verification'">
+                            <div class="status-badge"
+                                style="background: #fffaf0; color: #c05621; border: 1px solid #fbd38d;">
+                                Verification Pending
+                            </div>
+                            <p style="margin-top: 1rem; color: #718096; font-size: 0.9rem;">
+                                Your proof (UTR) is being verified.
+                            </p>
+                        </div>
+
+                        <!-- Paid -->
                         <div *ngIf="profile.paymentStatus === 'Paid'">
                             <div class="status-badge"
                                 style="background: #f0fff4; color: #38a169; border: 1px solid #c6f6d5;">
@@ -287,7 +313,7 @@
                         <thead>
                             <tr>
                                 <th>Date</th>
-                                <th>Payment ID</th>
+                                <th>UTR / ID</th>
                                 <th>Amount</th>
                                 <th>Type</th>
                                 <th>Status</th>
@@ -296,12 +322,15 @@
                         <tbody>
                             <tr *ngFor="let t of transactions" class="fade-in-row">
                                 <td>{{t.paymentDate | date:'medium'}}</td>
-                                <td style="font-family: monospace;">{{t.paymentId}}</td>
+                                <td style="font-family: monospace;">{{t.utr || t.paymentId}}</td>
                                 <td style="font-weight: 600;">₹{{t.amount}}</td>
                                 <td>{{t.type}}</td>
                                 <td>
-                                    <span class="status-badge"
-                                        style="background: #f0fff4; color: #38a169; border: 1px solid #c6f6d5;">
+                                    <span class="status-badge" [ngClass]="{
+                                        'status-active': t.status === 'Success',
+                                        'status-notice': t.status === 'Pending Verification',
+                                        'status-disabled': t.status === 'Rejected'
+                                    }">
                                         {{t.status}}
                                     </span>
                                 </td>
@@ -317,6 +346,51 @@
             </div>
         </div>
 
+
+        <!-- UPI Payment Modal -->
+        <div class="modal-overlay" *ngIf="showPaymentModal">
+            <div class="modal-content" style="max-width: 450px; text-align: center; padding: 2rem;">
+                <h3 style="margin-bottom: 0.5rem; color: #2d3748;">Pay Rent via UPI</h3>
+                <p style="color: #718096; font-size: 0.9rem; margin-bottom: 1.5rem;">
+                    {{ isMobile ? 'Click the button below to pay via any UPI app' : 'Scan the QR code with your mobile
+                    UPI app to pay' }}
+                </p>
+
+                <div class="qr-container"
+                    style="background: white; padding: 1rem; border-radius: 12px; display: inline-block; box-shadow: 0 4px 12px rgba(0,0,0,0.05); margin-bottom: 1.5rem;">
+                    <img [src]="'https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=' + encodeUrl(upiUrl)"
+                        alt="Payment QR" style="width: 200px; height: 200px;">
+                </div>
+
+                <div style="margin-bottom: 1.5rem;" *ngIf="isMobile">
+                    <a [href]="upiUrl" class="action-btn"
+                        style="display: block; text-decoration: none; background: #5a67d8;">Open UPI App</a>
+                </div>
+
+                <div style="border-top: 1px solid #edf2f7; padding-top: 1.5rem; text-align: left;">
+                    <label
+                        style="display: block; font-size: 0.85rem; font-weight: 600; color: #4a5568; margin-bottom: 0.5rem;">Enter
+                        Transaction ID (UTR)</label>
+                    <input type="text" [(ngModel)]="paymentUtr" placeholder="12-digit UPI Ref Number" class="utr-input"
+                        [class.input-error]="paymentUtr && paymentUtr.length < 12" maxlength="12">
+
+                    <!-- Error Message -->
+                    <p *ngIf="paymentUtr && paymentUtr.length < 12"
+                        style="color: #e53e3e; font-size: 0.75rem; font-weight: 600; margin-top: -1.5rem; margin-bottom: 1rem;">
+                        Minimum 12 digits required
+                    </p>
+
+                    <p style="font-size: 0.75rem; color: #718096; margin-bottom: 1rem;">* You can find the UTR in your
+                        payment success screen or SMS.</p>
+                </div>
+
+                <div class="modal-actions" style="gap: 1rem;">
+                    <button class="close-btn" (click)="closePaymentModal()" style="flex: 1; margin: 0;">Cancel</button>
+                    <button class="action-btn" (click)="submitUtr()" style="flex: 2; margin: 0;"
+                        [disabled]="!paymentUtr || paymentUtr.length < 12">Submit Proof</button>
+                </div>
+            </div>
+        </div>
 
         <!-- Notice Confirmation Modal -->
         <div class="modal-overlay" *ngIf="showNoticeConfirmationModal">

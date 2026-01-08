@@ -11,8 +11,15 @@ builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
+var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+if (string.IsNullOrEmpty(connectionString))
+{
+    // Fallback for local debugging if connection string is missing in appsettings/env
+    Console.WriteLine("Warning: Connection string 'DefaultConnection' not found.");
+}
+
 builder.Services.AddDbContext<AppDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+    options.UseSqlServer(connectionString ?? "Server=local;Database=dummy;"));
 
 builder.Services.AddCors(options =>
 {
@@ -40,12 +47,5 @@ app.UseCors("AllowAll");
 app.UseAuthorization();
 
 app.MapControllers();
-
-// Auto-create DB for POC purposes since dotnet-ef is failing
-using (var scope = app.Services.CreateScope())
-{
-    var ctx = scope.ServiceProvider.GetRequiredService<AppDbContext>();
-    ctx.Database.EnsureCreated();
-}
 
 app.Run();

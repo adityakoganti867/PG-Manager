@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using PG_Backend.Data;
 
@@ -11,9 +12,11 @@ using PG_Backend.Data;
 namespace PG_Backend.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    partial class AppDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260107115759_NormalizeSchemaFinalV2")]
+    partial class NormalizeSchemaFinalV2
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -180,10 +183,6 @@ namespace PG_Backend.Migrations
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
-                    b.Property<string>("OwnerName")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
 
                     b.HasIndex("AdminId");
@@ -196,8 +195,7 @@ namespace PG_Backend.Migrations
                             Id = 1,
                             Address = "Main Road, City",
                             AdminId = 1,
-                            Name = "Default PG",
-                            OwnerName = "Aditya Koganti"
+                            Name = "Default PG"
                         });
                 });
 
@@ -239,7 +237,7 @@ namespace PG_Backend.Migrations
                             Id = 2,
                             Key = "UpiName",
                             PropertyId = 1,
-                            Value = "Ramesh Kumar"
+                            Value = "Aditya Koganti"
                         });
                 });
 
@@ -378,10 +376,6 @@ namespace PG_Backend.Migrations
                     b.Property<int>("Role")
                         .HasColumnType("int");
 
-                    b.Property<string>("Username")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(max)");
-
                     b.HasKey("Id");
 
                     b.ToTable("Users");
@@ -389,21 +383,11 @@ namespace PG_Backend.Migrations
                     b.HasData(
                         new
                         {
-                            Id = 100,
-                            IsActive = true,
-                            Mobile = "adityarajat",
-                            Password = "adityarajat",
-                            Role = 3,
-                            Username = "adityarajat"
-                        },
-                        new
-                        {
                             Id = 1,
                             IsActive = true,
                             Mobile = "admin",
                             Password = "admin",
-                            Role = 0,
-                            Username = "admin"
+                            Role = 0
                         });
                 });
 

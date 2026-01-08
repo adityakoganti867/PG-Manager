@@ -25,39 +25,42 @@ namespace PG_Backend.Controllers
                 .FirstOrDefaultAsync(g => g.UserId == userId);
                 
             if (guest == null) return NotFound();
-            
-            // Logic for Refund amount
-            decimal refundAmount = guest.AdvanceAmount - 1000;
+
+            var stay = await _context.GuestStays
+                .FirstOrDefaultAsync(s => s.GuestId == guest.Id);
+
+            if (stay == null) return NotFound("Stay details not found");
+
+            var room = await _context.Rooms.FindAsync(stay.RoomId);
+
+            decimal refundAmount = stay.AdvanceAmount - 1000;
             if (refundAmount < 0) refundAmount = 0;
 
             return Ok(new {
                 guest.Id,
                 guest.Name,
-                guest.RoomNumber,
-                guest.AdvanceAmount,
-                guest.RentAmount,
-                guest.JoiningDate,
-                guest.RentDueDate,
+                RoomNumber = room?.RoomNumber ?? "N/A",
+                stay.AdvanceAmount,
+                stay.RentAmount,
+                stay.JoiningDate,
+                stay.RentDueDate,
 
-                guest.IsInNoticePeriod,
-                guest.NoticeStartDate,
-                guest.NoticeStatus,
+                stay.IsInNoticePeriod,
+                stay.NoticeStartDate,
+                stay.NoticeStatus,
 
                 RefundAmount = refundAmount,
 
-                IsRentDue = DateTime.Now >= guest.RentDueDate,
-                guest.PaymentStatus,
-                guest.LastPaidDate,
+                IsRentDue = DateTime.Now >= stay.RentDueDate,
+                stay.PaymentStatus,
+                stay.LastPaidDate,
 
-                guest.RentType,
-                guest.PerDayRent,
-                guest.EndDate,
-                User = new { guest.User.Id, guest.User.Mobile, guest.User.IsActive }
+                stay.RentType,
+                stay.PerDayRent,
+                stay.EndDate,
+                User = guest.User != null ? new { guest.User.Id, guest.User.Mobile, guest.User.IsActive } : null
             });
-
         }
-
-
 
         [HttpPost("initiate-notice/{userId}")]
         public async Task<IActionResult> InitiateNotice(int userId)
@@ -65,13 +68,14 @@ namespace PG_Backend.Controllers
              var guest = await _context.Guests.FirstOrDefaultAsync(g => g.UserId == userId);
              if (guest == null) return BadRequest("Guest not found");
 
-             if (guest.NoticeStatus == "Pending") return BadRequest("Notice request is already pending.");
-             if (guest.NoticeStatus == "Approved") return BadRequest("Already in notice period.");
+             var stay = await _context.GuestStays.FirstOrDefaultAsync(s => s.GuestId == guest.Id);
+             if (stay == null) return BadRequest("Stay record not found");
 
+             if (stay.NoticeStatus == "Pending") return BadRequest("Notice request is already pending.");
+             if (stay.NoticeStatus == "Approved") return BadRequest("Already in notice period.");
 
-             // Validation: Must be >= 30 days before Next Due Date (Fixed 30 days rule)
              var today = DateTime.Today;
-             var dueDate = guest.RentDueDate.Date;
+             var dueDate = stay.RentDueDate.Date;
              var daysUntilDue = (dueDate - today).TotalDays;
 
              if (daysUntilDue < 30)
@@ -79,15 +83,10 @@ namespace PG_Backend.Controllers
                  return BadRequest($"Oops! You have only {daysUntilDue} days left until your next due date. At least 30 days are needed to raise a notice request.");
              }
 
-
-             guest.NoticeStatus = "Pending";
-             // guest.IsInNoticePeriod = false; // Remains false until approved
-             // guest.NoticeStartDate = null; // Set on approval
+             stay.NoticeStatus = "Pending";
              await _context.SaveChangesAsync();
              
              return Ok("Notice Request Initiated. Waiting for Approval.");
         }
-
-
     }
 }

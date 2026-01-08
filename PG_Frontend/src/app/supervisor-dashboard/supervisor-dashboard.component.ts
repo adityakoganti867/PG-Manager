@@ -2,6 +2,7 @@ import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule, ReactiveFormsModule, FormBuilder, FormGroup, Validators } from '@angular/forms';
 import { ApiService } from '../services/api.service';
+import { AuthService } from '../services/auth.service';
 
 @Component({
     selector: 'app-supervisor-dashboard',
@@ -15,12 +16,14 @@ export class SupervisorDashboardComponent implements OnInit {
     showStatusUpdateModal: boolean = false;
     selectedComplaint: any = null;
     statusUpdateForm: FormGroup;
+    user: any;
 
     // Filters
     complaintStatusFilter: string = '';
     openDropdown: string | null = null;
 
-    constructor(private api: ApiService, private fb: FormBuilder) {
+    constructor(private api: ApiService, private fb: FormBuilder, private auth: AuthService) {
+        this.user = this.auth.currentUserValue;
         this.statusUpdateForm = this.fb.group({
             status: ['Registered', Validators.required],
             estimatedResolutionDays: [1],

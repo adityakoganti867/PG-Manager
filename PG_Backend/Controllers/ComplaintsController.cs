@@ -3,7 +3,6 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using PG_Backend.Data;
 using PG_Backend.Models;
-using System.Security.Claims;
 
 namespace PG_Backend.Controllers
 {
@@ -18,11 +17,16 @@ namespace PG_Backend.Controllers
             _context = context;
         }
 
+        private int CurrentAdminId => int.TryParse(Request.Headers["X-Admin-Id"], out var id) ? id : 0;
+
         [HttpGet]
         public async Task<ActionResult<IEnumerable<Complaint>>> GetComplaints()
         {
+            var adminId = CurrentAdminId;
             return await _context.Complaints
                 .Include(c => c.Guest)
+                .ThenInclude(g => g.Property)
+                .Where(c => adminId == 0 || c.Guest.Property.AdminId == adminId)
                 .OrderByDescending(c => c.CreatedDate)
                 .ToListAsync();
         }
@@ -42,7 +46,6 @@ namespace PG_Backend.Controllers
         [HttpPost]
         public async Task<ActionResult<Complaint>> PostComplaint(Complaint complaint)
         {
-            // Ensure guest exists
             var guest = await _context.Guests.FindAsync(complaint.GuestId);
             if (guest == null) return NotFound("Guest not found");
 
@@ -67,14 +70,9 @@ namespace PG_Backend.Controllers
         public async Task<IActionResult> UpdateStatus(int id, [FromBody] ComplaintUpdateDto update)
         {
             var complaint = await _context.Complaints.FindAsync(id);
-            
             if (complaint == null) return NotFound();
 
-            if (complaint.Status == "Solved")
-            {
-                return BadRequest("Solved complaints cannot be updated.");
-            }
-
+            if (complaint.Status == "Solved") return BadRequest("Solved complaints cannot be updated.");
 
             complaint.Status = update.Status;
             if (update.Status == "InProgress")
@@ -98,15 +96,10 @@ namespace PG_Backend.Controllers
             var complaint = await _context.Complaints.FindAsync(id);
             if (complaint == null) return NotFound();
 
-            // Only allow delete if Registered
-            if (complaint.Status != "Registered")
-            {
-                return BadRequest("Only registered complaints can be cancelled.");
-            }
+            if (complaint.Status != "Registered") return BadRequest("Only registered complaints can be cancelled.");
 
             _context.Complaints.Remove(complaint);
             await _context.SaveChangesAsync();
-
             return NoContent();
         }
     }

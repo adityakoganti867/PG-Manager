@@ -315,3 +315,4 @@ E:\PG-Manager\PG_Backend\obj\Debug\net9.0\refint\PG_Backend.dll
 E:\PG-Manager\PG_Backend\obj\Debug\net9.0\PG_Backend.pdb
 E:\PG-Manager\PG_Backend\obj\Debug\net9.0\PG_Backend.genruntimeconfig.cache
 E:\PG-Manager\PG_Backend\obj\Debug\net9.0\ref\PG_Backend.dll
+C:\Users\AdityaKoganti\.gemini\antigravity\scratch\PG_Management_System\PG_Backend\obj\Debug\net9.0\PG_Backend.sourcelink.json

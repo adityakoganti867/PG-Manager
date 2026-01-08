@@ -17,24 +17,47 @@ namespace PG_Backend.Controllers
             _context = context;
         }
 
+        private int CurrentAdminId => int.TryParse(Request.Headers["X-Admin-Id"], out var id) ? id : 0;
+
+        // Helper to get the default property for the current admin
+        private async Task<int> GetPropertyId()
+        {
+            var adminId = CurrentAdminId;
+            var property = await _context.Properties.FirstOrDefaultAsync(p => p.AdminId == adminId);
+            return property?.Id ?? 0;
+        }
+
         [HttpGet("supervisors")]
         public async Task<IActionResult> GetSupervisors()
         {
-            var sups = await _context.Supervisors.Include(s => s.User).ToListAsync();
+            var propertyId = await GetPropertyId();
+            var sups = await _context.Supervisors
+                .Where(s => s.PropertyId == propertyId)
+                .Include(s => s.User)
+                .ToListAsync();
             return Ok(sups);
         }
 
         [HttpPost("add-supervisor")]
         public async Task<IActionResult> AddSupervisor([FromBody] SupervisorDto dto)
         {
-            if (await _context.Users.AnyAsync(u => u.Mobile == dto.Mobile))
+            var propertyId = await GetPropertyId();
+            if (propertyId == 0) return BadRequest("No property found for this admin");
+
+            if (await _context.Users.AnyAsync(u => u.Mobile == dto.Mobile.Trim()))
                 return BadRequest("User already exists");
 
-            var user = new User { Mobile = dto.Mobile, Password = "", Role = UserRole.Supervisor, IsActive = true };
+            var user = new User { 
+                Username = dto.Mobile.Trim(),
+                Mobile = dto.Mobile.Trim(), 
+                Password = "", 
+                Role = UserRole.Supervisor, 
+                IsActive = true 
+            };
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
-            var supervisor = new Supervisor { UserId = user.Id, Name = dto.Name, JoiningDate = dto.JoiningDate };
+            var supervisor = new Supervisor { UserId = user.Id, Name = dto.Name, JoiningDate = dto.JoiningDate, PropertyId = propertyId };
             _context.Supervisors.Add(supervisor);
             await _context.SaveChangesAsync();
 
@@ -44,6 +67,10 @@ namespace PG_Backend.Controllers
         [HttpPost("toggle-supervisor/{id}")]
         public async Task<IActionResult> ToggleSupervisor(int id)
         {
+            var propertyId = await GetPropertyId();
+            var supervisor = await _context.Supervisors.FirstOrDefaultAsync(s => s.UserId == id && s.PropertyId == propertyId);
+            if (supervisor == null) return Unauthorized("Unauthorized access to supervisor");
+
             var user = await _context.Users.FindAsync(id);
             if (user == null) return NotFound();
             user.IsActive = !user.IsActive;
@@ -54,8 +81,9 @@ namespace PG_Backend.Controllers
         [HttpPost("toggle-guest/{id}")]
         public async Task<IActionResult> ToggleGuest(int id)
         {
-            var guest = await _context.Guests.FindAsync(id); // Find using GuestId
-            if (guest == null) return NotFound();
+            var propertyId = await GetPropertyId();
+            var guest = await _context.Guests.FirstOrDefaultAsync(g => g.Id == id && g.PropertyId == propertyId);
+            if (guest == null) return Unauthorized("Unauthorized access to guest");
 
             var user = await _context.Users.FindAsync(guest.UserId);
             if (user == null) return NotFound();
@@ -68,10 +96,19 @@ namespace PG_Backend.Controllers
         [HttpPost("add-guest")]
         public async Task<IActionResult> AddGuest([FromBody] GuestDto dto)
         {
-             if (await _context.Users.AnyAsync(u => u.Mobile == dto.Mobile))
+            var propertyId = await GetPropertyId();
+            if (propertyId == 0) return BadRequest("No property found for this admin");
+
+            if (await _context.Users.AnyAsync(u => u.Mobile == dto.Mobile.Trim()))
                 return BadRequest("User already exists");
 
-            var user = new User { Mobile = dto.Mobile, Password = "", Role = UserRole.Guest, IsActive = true };
+            var user = new User { 
+                Username = dto.Mobile.Trim(),
+                Mobile = dto.Mobile.Trim(), 
+                Password = "", 
+                Role = UserRole.Guest, 
+                IsActive = true 
+            };
             _context.Users.Add(user);
             await _context.SaveChangesAsync();
 
@@ -89,48 +126,85 @@ namespace PG_Backend.Controllers
             }
 
             // Check and update Room Availability
-            var room = await _context.Rooms.FirstOrDefaultAsync(r => r.RoomNumber == dto.RoomNumber);
-            if (room != null)
+            var room = await _context.Rooms.FirstOrDefaultAsync(r => r.RoomNumber == dto.RoomNumber && r.PropertyId == propertyId);
+            if (room == null) return NotFound("Room not found");
+            
+            if (room.AvailableBeds <= 0)
             {
-                if (room.AvailableBeds <= 0)
-                {
-                    // Should theoretically be caught by UI, but safe to check
-                    return BadRequest("Selected room is fully occupied.");
-                }
-                room.AvailableBeds -= 1;
-                // No need to call Update explicitly, SaveChanges handles tracked entities
+                return BadRequest("Selected room is fully occupied.");
             }
+            room.AvailableBeds -= 1;
 
             var guest = new Guest { 
                 UserId = user.Id, 
                 Name = dto.Name, 
-                RoomNumber = dto.RoomNumber, 
                 Occupation = dto.Occupation,
+                PropertyId = propertyId
+            };
+            _context.Guests.Add(guest);
+            await _context.SaveChangesAsync();
+
+            var stay = new GuestStay {
+                GuestId = guest.Id,
+                RoomId = room.Id,
                 AdvanceAmount = dto.AdvanceAmount,
                 RentAmount = dto.RentAmount,
                 JoiningDate = joiningDate,
                 RentDueDate = rentDueDate,
-                IsInNoticePeriod = false,
                 RentType = dto.RentType,
                 PerDayRent = dto.PerDayRent,
                 EndDate = dto.EndDate
             };
-            _context.Guests.Add(guest);
+            _context.GuestStays.Add(stay);
             await _context.SaveChangesAsync();
+
             return Ok("Guest Added");
         }
 
         [HttpGet("guests")]
         public async Task<IActionResult> GetAllGuests()
         {
-            var guests = await _context.Guests.Include(g => g.User).ToListAsync();
-            return Ok(guests);
+            var propertyId = await GetPropertyId();
+            var guests = await _context.Guests
+                .Where(g => g.PropertyId == propertyId)
+                .Include(g => g.User)
+                .Select(g => new {
+                    g.Id,
+                    g.Name,
+                    g.Occupation,
+                    User = g.User,
+                    Stay = _context.GuestStays.FirstOrDefault(s => s.GuestId == g.Id)
+                })
+                .ToListAsync();
+
+            // Map to a friendlier frontend format
+            var results = guests.Select(g => new {
+                g.Id,
+                g.Name,
+                g.Occupation,
+                g.User,
+                RoomNumber = _context.Rooms.Where(r => r.Id == g.Stay.RoomId).Select(r => r.RoomNumber).FirstOrDefault(),
+                AdvanceAmount = g.Stay?.AdvanceAmount ?? 0,
+                RentAmount = g.Stay?.RentAmount ?? 0,
+                JoiningDate = g.Stay?.JoiningDate,
+                RentDueDate = g.Stay?.RentDueDate,
+                NoticeStatus = g.Stay?.NoticeStatus ?? "None",
+                IsInNoticePeriod = g.Stay?.IsInNoticePeriod ?? false,
+                PaymentStatus = g.Stay?.PaymentStatus ?? "Pending"
+            });
+
+            return Ok(results);
         }
 
         [HttpGet("complaints")]
         public async Task<IActionResult> GetAllComplaints([FromQuery] string? status)
         {
-            var query = _context.Complaints.Include(c => c.Guest).AsQueryable();
+            var propertyId = await GetPropertyId();
+            var query = _context.Complaints
+                .Include(c => c.Guest)
+                .Where(c => c.Guest.PropertyId == propertyId)
+                .AsQueryable();
+
             if (!string.IsNullOrEmpty(status))
             {
                 query = query.Where(c => c.Status == status);
@@ -141,14 +215,21 @@ namespace PG_Backend.Controllers
         [HttpGet("rooms")]
         public async Task<IActionResult> GetRooms()
         {
-            return Ok(await _context.Rooms.OrderBy(r => r.RoomNumber).ToListAsync());
+            var propertyId = await GetPropertyId();
+            return Ok(await _context.Rooms
+                .Where(r => r.PropertyId == propertyId)
+                .OrderBy(r => r.RoomNumber)
+                .ToListAsync());
         }
 
         [HttpPost("add-room")]
         public async Task<IActionResult> AddRoom([FromBody] RoomDto dto)
         {
-            if (await _context.Rooms.AnyAsync(r => r.RoomNumber == dto.RoomNumber))
-                return BadRequest("Room Number already exists");
+            var propertyId = await GetPropertyId();
+            if (propertyId == 0) return BadRequest("No property found for this admin");
+
+            if (await _context.Rooms.AnyAsync(r => r.RoomNumber == dto.RoomNumber && r.PropertyId == propertyId))
+                return BadRequest("Room Number already exists for this PG");
 
             var room = new Room
             {
@@ -157,7 +238,8 @@ namespace PG_Backend.Controllers
                 SharingType = dto.SharingType,
                 RoomType = dto.RoomType,
                 TotalBeds = dto.SharingType,
-                AvailableBeds = dto.SharingType
+                AvailableBeds = dto.SharingType,
+                PropertyId = propertyId
             };
             _context.Rooms.Add(room);
             await _context.SaveChangesAsync();
@@ -167,21 +249,14 @@ namespace PG_Backend.Controllers
         [HttpGet("available-rooms")]
         public async Task<IActionResult> GetAvailableRooms([FromQuery] int share, [FromQuery] int? floor, [FromQuery] string? roomType)
         {
-            Console.WriteLine($"GetAvailableRooms called with: share={share}, floor={floor}, roomType='{roomType}'");
-            
-            // Build query with all conditions at once
+            var propertyId = await GetPropertyId();
             var results = await _context.Rooms
-                .Where(r => r.AvailableBeds > 0 
+                .Where(r => r.PropertyId == propertyId 
+                    && r.AvailableBeds > 0 
                     && r.SharingType == share
                     && (!floor.HasValue || r.FloorNumber == floor.Value)
                     && (string.IsNullOrEmpty(roomType) || r.RoomType == roomType))
                 .ToListAsync();
-            
-            Console.WriteLine($"Query returned {results.Count} rooms:");
-            foreach (var room in results)
-            {
-                Console.WriteLine($"  Room: {room.RoomNumber}, Type: '{room.RoomType}', Floor: {room.FloorNumber}, Share: {room.SharingType}, Available: {room.AvailableBeds}");
-            }
             
             return Ok(results);
         }
@@ -189,14 +264,18 @@ namespace PG_Backend.Controllers
         [HttpPost("approve-notice/{guestId}")]
         public async Task<IActionResult> ApproveNotice(int guestId)
         {
-            var guest = await _context.Guests.FindAsync(guestId);
-            if (guest == null) return NotFound("Guest not found");
+            var propertyId = await GetPropertyId();
+            var stay = await _context.GuestStays
+                .Include(s => s.Guest)
+                .FirstOrDefaultAsync(s => s.GuestId == guestId && s.Guest.PropertyId == propertyId);
 
-            if (guest.NoticeStatus != "Pending") return BadRequest("No pending notice request found.");
+            if (stay == null) return NotFound("Stay record not found or unauthorized");
 
-            guest.NoticeStatus = "Approved";
-            guest.IsInNoticePeriod = true;
-            guest.NoticeStartDate = DateTime.Now;
+            if (stay.NoticeStatus != "Pending") return BadRequest("No pending notice request found.");
+
+            stay.NoticeStatus = "Approved";
+            stay.IsInNoticePeriod = true;
+            stay.NoticeStartDate = DateTime.Now;
             
             await _context.SaveChangesAsync();
             return Ok("Notice Period Approved");
@@ -205,24 +284,32 @@ namespace PG_Backend.Controllers
         [HttpPost("revert-notice/{guestId}")]
         public async Task<IActionResult> RevertNotice(int guestId)
         {
-            var guest = await _context.Guests.FindAsync(guestId);
-            if (guest == null) return NotFound("Guest not found");
+            var propertyId = await GetPropertyId();
+            var stay = await _context.GuestStays
+                .Include(s => s.Guest)
+                .FirstOrDefaultAsync(s => s.GuestId == guestId && s.Guest.PropertyId == propertyId);
 
-            if (!guest.IsInNoticePeriod) return BadRequest("Guest is not in notice period.");
+            if (stay == null) return NotFound("Stay record not found or unauthorized");
 
-            guest.NoticeStatus = "None";
-            guest.IsInNoticePeriod = false;
-            guest.NoticeStartDate = null;
-            // Note: RentDueDate is left as is. It was likely set when notice was approved or before.
-            // If the user wants to manually adjust it, they can do so (if we build that feature), 
-            // but for now, reverting simply removes the notice status.
+            if (!stay.IsInNoticePeriod) return BadRequest("Guest is not in notice period.");
+
+            stay.NoticeStatus = "None";
+            stay.IsInNoticePeriod = false;
+            stay.NoticeStartDate = null;
             
             await _context.SaveChangesAsync();
             return Ok("Notice Period Reverted");
         }
+
         [HttpPost("reset-password/{userId}")]
         public async Task<IActionResult> ResetPassword(int userId)
         {
+            var propertyId = await GetPropertyId();
+            bool isOwned = await _context.Guests.AnyAsync(g => g.UserId == userId && g.PropertyId == propertyId) ||
+                           await _context.Supervisors.AnyAsync(s => s.UserId == userId && s.PropertyId == propertyId);
+
+            if (!isOwned) return Unauthorized("Unauthorized to reset password for this user");
+
             var user = await _context.Users.FindAsync(userId);
             if (user == null) return NotFound("User not found");
 
@@ -231,7 +318,6 @@ namespace PG_Backend.Controllers
             return Ok("Password Reset Successfully");
         }
     }
-
 
     public class SupervisorDto {
         public string Name { get; set; } = string.Empty;
@@ -248,7 +334,6 @@ namespace PG_Backend.Controllers
         public decimal RentAmount { get; set; }
         public DateTime JoiningDate { get; set; }
         
-        // New Props
         public string RentType { get; set; } = "Regular";
         public decimal? PerDayRent { get; set; }
         public DateTime? EndDate { get; set; }

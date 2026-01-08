@@ -122,6 +122,19 @@ h2::after {
     border-radius: 2px;
 }
 
+.header-action {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+}
+
+.filter-group {
+    display: flex;
+    gap: 15px;
+    align-items: center;
+}
+
 /* Card Styles */
 .card {
     background: white;
@@ -300,13 +313,38 @@ td:last-child {
 }
 
 .status-active {
-    background: #c6f6d5;
-    color: #22543d;
+    background: #f0fff4;
+    color: #38a169;
+    border: 1px solid #c6f6d5;
+}
+
+.status-active::before {
+    background-color: #38a169;
+    box-shadow: 0 0 6px #38a169;
+    animation: neon-blink-green 1.5s infinite;
+}
+
+.status-notice {
+    background: #fffaf0;
+    color: #dd6b20;
+    border: 1px solid #fbd38d;
+}
+
+.status-notice::before {
+    background-color: #dd6b20;
+    box-shadow: 0 0 6px #dd6b20;
+    animation: neon-blink-orange 1.5s infinite;
 }
 
 .status-disabled {
     background: #cbd5e0;
     color: #4a5568;
+    border: 1px solid #a0aec0;
+}
+
+.status-disabled::before {
+    background-color: #4a5568;
+    box-shadow: 0 0 4px #4a5568;
 }
 
 @keyframes blink-green-anim {
@@ -1665,4 +1703,113 @@ td button:hover {
 
 .table-scroll-wrapper::-webkit-scrollbar-thumb:hover {
     background: #a8a8a8;
+}
+
+/* Premium Transaction Buttons */
+.premium-approve-btn,
+.premium-reject-btn {
+    display: inline-flex !important;
+    align-items: center !important;
+    gap: 4px !important;
+    padding: 6px 12px !important;
+    border-radius: 50px !important;
+    font-size: 0.65rem !important;
+    font-weight: 800 !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.5px !important;
+    cursor: pointer !important;
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+    border: none !important;
+    height: 32px !important;
+    white-space: nowrap !important;
+}
+
+.premium-approve-btn {
+    background: linear-gradient(135deg, #48bb78 0%, #38a169 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(56, 161, 105, 0.3) !important;
+}
+
+.premium-approve-btn:hover {
+    transform: translateY(-2px) scale(1.05) !important;
+    box-shadow: 0 8px 25px rgba(56, 161, 105, 0.4) !important;
+}
+
+.premium-reject-btn {
+    background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%) !important;
+    color: white !important;
+    box-shadow: 0 4px 15px rgba(229, 62, 62, 0.3) !important;
+}
+
+.premium-reject-btn:hover {
+    transform: translateY(-2px) scale(1.05) !important;
+    box-shadow: 0 8px 25px rgba(229, 62, 62, 0.4) !important;
+}
+
+/* Transaction Filter Dropdown */
+.custom-dropdown {
+    position: relative;
+}
+
+.dropdown-trigger {
+    display: flex;
+    align-items: center;
+    background: white;
+    padding: 10px 24px;
+    border: 2px solid #edf2f7;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #4a5568;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+}
+
+.dropdown-trigger:hover {
+    border-color: #667eea;
+    color: #667eea;
+}
+
+.dropdown-menu {
+    position: absolute;
+    top: calc(100% + 12px);
+    right: 0;
+    background: white;
+    min-width: 240px;
+    border-radius: 16px;
+    box-shadow: 0 15px 35px rgba(0, 0, 0, 0.15);
+    padding: 10px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-15px);
+    transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    z-index: 1000;
+    border: 1px solid #edf2f7;
+}
+
+.dropdown-menu.show {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-item {
+    background: transparent !important;
+    padding: 12px 18px !important;
+    border-radius: 10px !important;
+    font-size: 0.85rem !important;
+    font-weight: 600 !important;
+    color: #4a5568 !important;
+    text-transform: none !important;
+    text-align: left !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+}
+
+.dropdown-item:hover {
+    background: #f7fafc !important;
+    color: #667eea !important;
+    padding-left: 24px !important;
+    transform: none !important;
 }

@@ -29,9 +29,10 @@ export class AuthService {
         return userStr ? JSON.parse(userStr) : null;
     }
 
-    login(mobile: string, password: string): Observable<any> {
-        return this.http.post(`${this.apiUrl}/login`, { mobile, password }).pipe(
+    login(username: string, password: string): Observable<any> {
+        return this.http.post(`${this.apiUrl}/login`, { username, password }).pipe(
             tap((user: any) => {
+                console.log('Login Response:', user);
                 localStorage.setItem('user', JSON.stringify(user));
                 this.userSubject.next(user);
                 this.redirectUser(user.role);
@@ -39,12 +40,12 @@ export class AuthService {
         );
     }
 
-    checkStatus(mobile: string) {
-        return this.http.get(`${this.apiUrl}/check-status?mobile=${mobile}`);
+    checkStatus(username: string) {
+        return this.http.get(`${this.apiUrl}/check-status?username=${username}`);
     }
 
-    setPassword(mobile: string, password: string) {
-        return this.http.post(`${this.apiUrl}/set-password`, { mobile, password }, { responseType: 'text' });
+    setPassword(username: string, password: string) {
+        return this.http.post(`${this.apiUrl}/set-password`, { username, password }, { responseType: 'text' });
     }
 
     logout() {
@@ -57,6 +58,7 @@ export class AuthService {
         if (role === 0) this.router.navigate(['/admin']);
         else if (role === 1) this.router.navigate(['/supervisor']);
         else if (role === 2) this.router.navigate(['/guest']);
+        else if (role === 3) this.router.navigate(['/superadmin']);
     }
 
     get currentUserValue() {

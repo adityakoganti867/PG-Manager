@@ -1,0 +1,135 @@
+<div class="dashboard">
+    <nav class="sidebar">
+        <h3>Super Portal</h3>
+        <button class="active">Manage Properties</button>
+    </nav>
+    <main class="content">
+        <div class="header-action">
+            <h2>PG Network Overview</h2>
+            <button class="action-btn" (click)="openAddModal()">+ Add New PG</button>
+        </div>
+
+        <div class="list">
+            <h3>Registered Properties</h3>
+            <table>
+                <thead>
+                    <tr>
+                        <th>Property Name</th>
+                        <th>Owner</th>
+                        <th>Address</th>
+                        <th>Admin User</th>
+                        <th>Phone</th>
+                        <th>Status</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr *ngFor="let p of properties" class="fade-in-row">
+                        <td style="font-weight: 600;">{{p.name}}</td>
+                        <td>{{p.ownerName}}</td>
+                        <td>{{p.address}}</td>
+                        <td><code
+                                style="background: #edf2f7; padding: 4px 8px; border-radius: 4px;">{{p.adminUsername}}</code>
+                        </td>
+                        <td>{{p.adminMobile}}</td>
+                        <td>
+                            <span class="status-badge" [ngClass]="p.isActive ? 'status-active' : 'status-disabled'">
+                                {{ p.isActive ? 'Enabled' : 'Disabled' }}
+                            </span>
+                        </td>
+                        <td>
+                            <button (click)="toggleProperty(p.id)" class="action-btn"
+                                [style.background]="p.isActive ? '#e53e3e' : '#38a169'"
+                                style="padding: 8px 16px; min-width: 140px; font-size: 0.85rem;">
+                                {{ p.isActive ? 'Disable Access' : 'Enable Access' }}
+                            </button>
+                        </td>
+                    </tr>
+                    <tr *ngIf="properties.length === 0">
+                        <td colspan="7" style="text-align: center; padding: 3rem; color: #718096;">
+                            No properties found. Start by adding your first PG!
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Add Property Modal -->
+        <div class="modal-overlay" *ngIf="showAddModal">
+            <div class="modal-content">
+                <h3>Onboard New PG Property</h3>
+                <form [formGroup]="propertyForm" (ngSubmit)="addProperty()">
+                    <div class="form-group">
+                        <label>PG Name (Max 30)</label>
+                        <input formControlName="propertyName" placeholder="e.g. Skyline Luxury PG" maxlength="30">
+                    </div>
+                    <div class="form-group">
+                        <label>Location / Address (Max 30)</label>
+                        <textarea formControlName="address" placeholder="e.g. HSR Layout, Sector 2" maxlength="30"
+                            rows="2"></textarea>
+                    </div>
+                    <div class="form-group">
+                        <label>Owner Name (Max 30)</label>
+                        <input formControlName="ownerName" placeholder="e.g. Aditya Koganti" maxlength="30">
+                    </div>
+                    <div class="form-group">
+                        <label>Admin Username (Max 10)</label>
+                        <input formControlName="adminUsername" placeholder="e.g. admin_hsr" maxlength="10">
+                    </div>
+                    <div class="form-group">
+                        <label>Admin Phone (10 Digits)</label>
+                        <input formControlName="adminMobile" placeholder="e.g. 9876543210" maxlength="10">
+                        <small style="color: #718096; margin-top: 5px; display: block;">
+                            Admin resets password on first login using this Username.
+                        </small>
+                    </div>
+
+                    <div class="modal-actions">
+                        <button type="submit" class="action-btn" [disabled]="propertyForm.invalid">Create PG &
+                            Admin</button>
+                        <button type="button" class="close-btn" (click)="closeModal()">Cancel</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        <!-- Custom Confirmation Modal -->
+        <div class="modal-overlay" *ngIf="showConfirmModal">
+            <div class="modal-content" style="max-width: 400px; text-align: center;">
+                <ng-container *ngIf="modalStep === 'confirm'">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">⚠️</div>
+                    <h3 style="margin-bottom: 1rem;">Confirm Status Change</h3>
+                    <p style="color: #4a5568; margin-bottom: 2rem;">
+                        Are you sure you want to <strong>{{ propertyToToggle?.isActive ? 'Disable' : 'Enable'
+                            }}</strong> access for
+                        <strong>{{ propertyToToggle?.name }}</strong>?
+                        <br><br>
+                        <span style="font-size: 0.85rem; color: #718096;">This will affect all associated Admin,
+                            Supervisors, and Guests.</span>
+                    </p>
+
+                    <div class="modal-actions" style="justify-content: center; gap: 1rem;">
+                        <button class="action-btn"
+                            [style.background]="propertyToToggle?.isActive ? '#e53e3e' : '#38a169'"
+                            (click)="confirmToggle()">
+                            Yes, Confirm
+                        </button>
+                        <button class="close-btn" (click)="closeConfirmModal()"
+                            style="border: 1px solid #e2e8f0;">Cancel</button>
+                    </div>
+                </ng-container>
+
+                <ng-container *ngIf="modalStep === 'success'">
+                    <div style="font-size: 3rem; margin-bottom: 1rem;">✅</div>
+                    <h3 style="margin-bottom: 1rem; color: #2f855a;">Success!</h3>
+                    <p style="color: #4a5568; margin-bottom: 2rem;">
+                        The status for <strong>{{ propertyToToggle?.name }}</strong> has been updated successfully.
+                    </p>
+                    <div class="modal-actions" style="justify-content: center;">
+                        <button class="action-btn" style="background: #2f855a;"
+                            (click)="closeConfirmModal()">Great!</button>
+                    </div>
+                </ng-container>
+            </div>
+        </div>
+    </main>
+</div>

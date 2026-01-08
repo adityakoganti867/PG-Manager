@@ -17,7 +17,7 @@ export class LoginComponent {
     errorMsg: string = '';
 
     showSetPasswordModal: boolean = false;
-    userMobileForSet: string = '';
+    userUsernameForSet: string = '';
     newPassword: string = '';
     confirmPassword: string = '';
     passwordError: string = '';
@@ -30,33 +30,37 @@ export class LoginComponent {
         }
 
         this.loginForm = this.fb.group({
-            mobile: ['', Validators.required],
+            username: ['', Validators.required],
             password: ['', Validators.required]
         });
     }
 
     onSubmit() {
         if (this.loginForm.valid) {
-            this.auth.login(this.loginForm.value.mobile, this.loginForm.value.password).subscribe({
+            this.auth.login(this.loginForm.value.username, this.loginForm.value.password).subscribe({
                 next: (user: any) => {
                     // Auto-route based on user's actual role
                     // No role validation needed - just route to appropriate dashboard
                 },
                 error: (err) => {
-                    this.errorMsg = 'Login Failed. Check credentials.';
-                    console.error(err);
+                    if (err.error) {
+                        this.errorMsg = typeof err.error === 'string' ? err.error : (err.error.message || 'Login Failed');
+                    } else {
+                        this.errorMsg = 'Login Failed. Check credentials.';
+                    }
+                    console.error('Login error:', err);
                 }
             });
         }
     }
 
-    onMobileBlur() {
-        const mobile = this.loginForm.get('mobile')?.value;
-        if (mobile && mobile.length >= 10) {
-            this.auth.checkStatus(mobile).subscribe({
+    onUsernameBlur() {
+        const username = this.loginForm.get('username')?.value?.trim();
+        if (username && username.length >= 3) {
+            this.auth.checkStatus(username).subscribe({
                 next: (res: any) => {
                     if (!res.isPasswordSet) {
-                        this.userMobileForSet = mobile;
+                        this.userUsernameForSet = username;
                         this.showSetPasswordModal = true;
                     }
                 },
@@ -75,10 +79,10 @@ export class LoginComponent {
             return;
         }
 
-        this.auth.setPassword(this.userMobileForSet, this.newPassword).subscribe({
+        this.auth.setPassword(this.userUsernameForSet, this.newPassword).subscribe({
             next: (res) => {
                 // Auto Login
-                this.auth.login(this.userMobileForSet, this.newPassword).subscribe({
+                this.auth.login(this.userUsernameForSet, this.newPassword).subscribe({
                     next: (user: any) => {
                         this.showSetPasswordModal = false;
                         // Login success, redirection happens in service
