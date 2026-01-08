@@ -7,7 +7,7 @@ import { Observable } from 'rxjs';
     providedIn: 'root'
 })
 export class ApiService {
-    private baseUrl = 'http://localhost:5122/api';
+    private baseUrl = 'https://pgapi-acg2g7a6c0gmcjey.centralindia-01.azurewebsites.net/api';
 
     constructor(private http: HttpClient) { }
 

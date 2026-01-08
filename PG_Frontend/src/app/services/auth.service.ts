@@ -8,7 +8,7 @@ import { Router } from '@angular/router';
     providedIn: 'root'
 })
 export class AuthService {
-    private apiUrl = 'http://localhost:5122/api/auth'; // Ensure this matches backend port
+    private apiUrl = 'https://pgapi-acg2g7a6c0gmcjey.centralindia-01.azurewebsites.net/api/auth'; // Ensure this matches backend port
     private userSubject = new BehaviorSubject<any>(this.getUserFromStorage());
     public user$ = this.userSubject.asObservable();
 
